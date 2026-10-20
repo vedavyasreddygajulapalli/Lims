@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+@theme {
+  --color-brand: #207566;
+  --color-surface: #f5f7f7;
+  --color-ink: #263e39;
+  --font-sans: Inter, "Segoe UI", Arial, sans-serif;
+}
+@layer base {
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  :root {
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    color: #273c39;
+    background: #f5f7f7;
+    font-synthesis: none;
+    font-size: 14px;
+    --ink: #263e39;
+    --muted: #7c8b88;
+    --green: #207566;
+    --pale: #e9f3ee;
+    --line: #e8edeb;
+    --card: #fff;
+    --radius: 12px;
+    --shadow: 0 2px 6px #17382b03;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+  }
+  button {
+    font: inherit;
+  }
+  input {
+    font: inherit;
+  }
+  textarea {
+    font: inherit;
+  }
+  select {
+    font: inherit;
+  }
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  button:focus-visible {
+    outline: 3px solid #83b8a7;
+    outline-offset: 3px;
+  }
+  a:focus-visible {
+    outline: 3px solid #83b8a7;
+    outline-offset: 3px;
+  }
+  input:focus-visible {
+    outline: 3px solid #83b8a7;
+    outline-offset: 3px;
+  }
+  select:focus-visible {
+    outline: 3px solid #83b8a7;
+    outline-offset: 3px;
+  }
+  textarea:focus-visible {
+    outline: 3px solid #83b8a7;
+    outline-offset: 3px;
+  }
+  h1 {
+    margin-top: 0;
+  }
+  h2 {
+    margin-top: 0;
+  }
+  h3 {
+    margin-top: 0;
+  }
+  p {
+    margin-top: 0;
+  }
+  h1 {
+    font-size: 29px;
+    font-weight: 650;
+    letter-spacing: -0.9px;
+    line-height: 1.2;
+    margin-bottom: 11px;
+  }
+  h2 {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.15px;
+    margin-bottom: 7px;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  p {
+    line-height: 1.65;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  small {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  a {
+    color: var(--green);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *:before {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *:after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    text-align: left;
+    font-size: 12px;
+  }
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: #8c9c94;
+    background: #fbfcfb;
+    padding: 13px 23px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 17px 23px;
+    border-bottom: 1px solid #f0f3f1;
+    color: #5a7066;
+    line-height: 1.5;
+    max-width: 270px;
+    overflow-wrap: anywhere;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: #fbfdfb;
+  }
+  main {
+    padding: 34px 32px;
+    max-width: 1550px;
+    margin: auto;
+    min-height: calc(100vh - 130px);
+    outline: none;
+  }
+  footer {
+    padding: 0 32px 22px;
+    display: flex;
+    gap: 20px;
+    font-size: 10px;
+    color: #718071;
+  }
+  footer > span:last-child {
+    margin-left: auto;
+  }
+  @media (min-width: 1600px) {
+    :root {
+      font-size: 15px;
+    }
+  }
+  @media (min-width: 1600px) {
+    main {
+      padding: 44px;
+    }
+  }
+  @media (max-width: 1050px) {
+    main {
+      padding: 28px 24px;
+    }
+  }
+  @media (max-width: 760px) {
+    main {
+      padding: 24px 17px;
+    }
+  }
+  @media (max-width: 760px) {
+    footer {
+      padding: 0 17px 20px;
+      font-size: 10px;
+    }
+  }
+  @media (max-width: 760px) {
+    footer > span:nth-child(2) {
+      display: none;
+    }
+  }
+  @media (max-width: 760px) {
+    h1 {
+      font-size: 24px;
+    }
+  }
+}
