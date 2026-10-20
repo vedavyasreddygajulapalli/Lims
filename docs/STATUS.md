@@ -41,4 +41,4 @@ Shared user validation and demo role enforcement now match the corresponding API
 
 ## Consolidated report workspace
 
-Sainath Signature v1.0 adds one-project multi-test selection, immutable draft snapshots, revision/withdrawal audit trails and shared API/demo PDF rendering. The seven-page synthetic template has been visually inspected. Local production build, 22 unit tests and 15 UI/demo tests pass. The new real MongoDB consolidated scenario is awaiting CI verification. Browser visual QA remains unavailable in this workspace. See REPORTS.md.
+Sainath Signature v1.0 adds one-project multi-test selection, immutable draft snapshots, revision/withdrawal audit trails and shared API/demo PDF rendering. The seven-page synthetic template has been visually inspected. Local production build, 22 unit tests and 15 UI/demo tests pass. GitHub Actions verified all 42 tests: 22 unit, 5 MongoDB/API scenarios and 15 UI/demo tests. Evidence: https://github.com/vedavyasreddygajulapalli/Lims/actions/runs/39471634553. Browser visual QA remains unavailable in this workspace. See REPORTS.md.
