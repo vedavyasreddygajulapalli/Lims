@@ -1,0 +1,23 @@
+{
+  "name": "sri-sainath-lims",
+  "private": true,
+  "version": "0.2.0",
+  "workspaces": [
+    "server",
+    "web",
+    "packages/core"
+  ],
+  "scripts": {
+    "build": "npm run build -w @lims/core && npm run build -w server && npm run build -w web",
+    "test": "npm run build -w @lims/core && npm run test -w server && npm run test -w web",
+    "dev:server": "npm run build -w @lims/core && npm run dev -w server",
+    "dev:web": "npm run build -w @lims/core && npm run dev -w web",
+    "bootstrap": "npm run bootstrap -w server",
+    "test:unit": "npm run build -w @lims/core && npm run test:unit -w server",
+    "test:integration": "npm run test:integration -w server",
+    "preview:build": "npm run build -w @lims/core && npm run build:demo -w web && node scripts/package-preview.mjs"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}
