@@ -1,0 +1,34 @@
+{
+  "name": "@lims/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "bootstrap": "node --import tsx src/bootstrap.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:unit": "node --import tsx --test test/domain.test.ts test/reference.test.ts test/dashboard.test.ts test/operations.test.ts",
+    "test:integration": "node --import tsx --test test/workflow.test.ts"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.19.0",
+    "zod": "^3.25.0",
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^8.1.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.0",
+    "@lims/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "tsx": "^4.20.0",
+    "@types/node": "^24.0.0",
+    "@types/express": "^5.0.0",
+    "@types/cookie-parser": "^1.4.9",
+    "supertest": "^7.1.0",
+    "@types/supertest": "^6.0.3",
+    "mongodb-memory-server": "^10.2.0"
+  }
+}
