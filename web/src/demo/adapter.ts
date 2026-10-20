@@ -1,4 +1,8 @@
 import {
+  consolidatedInput,
+  captureConsolidated,
+  consolidatedPdf,
+  type ConsolidatedReport,
   transition,
   operationSchemas,
   operationRoles,
@@ -53,6 +57,59 @@ function populate(row: LabRecord) {
     ]),
   ) as LabRecord;
 }
+function bundleContext(trfId: string) {
+  const trf = records.trfs.find((r) => r._id === trfId);
+  if (!trf) throw new Error("Test request not found");
+  const client = records.clients.find((r) => r._id === trf.clientId)!;
+  const samples = records.samples.filter((s) => s.trfId === trfId);
+  const person = (id: unknown) =>
+    String(records.users.find((r) => r._id === id)?.name ?? "");
+  const tests = records.assignments
+    .filter((a) => samples.some((s) => s._id === a.sampleId))
+    .map((a) => {
+      const sample = samples.find((s) => s._id === a.sampleId)!;
+      const method = records.methods.find((m) => m._id === a.methodId)!;
+      const eq = records.equipment.find((e) => e._id === a.equipmentId);
+      return {
+        id: a._id,
+        version: Number(a.version),
+        assignmentNumber: String(a.number),
+        sampleId: sample._id,
+        sampleNumber: String(sample.number),
+        description: String(sample.description),
+        material: String(sample.material),
+        condition: String(sample.condition),
+        storage: String(sample.storage),
+        receiptStatus: String(sample.receiptStatus),
+        method: String(method.name),
+        methodVersion: String(method.version),
+        status: String(a.status),
+        observations: a.observations as Record<string, string>,
+        technician: person(a.technicianId),
+        reviewer: person(a.reviewerId),
+        signatory: person(a.authorizedBy),
+        equipment: eq ? String(eq.number) + " / " + eq.name : "",
+      };
+    });
+  return {
+    client: {
+      name: String(client.name),
+      contact: String(client.contact),
+      email: String(client.email),
+      phone: String(client.phone),
+      address: String(client.address),
+    },
+    request: {
+      id: trf._id,
+      number: String(trf.number),
+      project: String(trf.project),
+      site: String(trf.site),
+      dueDate: String(trf.dueDate),
+      requestedTests: String(trf.requestedTests),
+    },
+    tests,
+  };
+}
 export async function demoRequest(
   path: string,
   method: string,
@@ -95,6 +152,67 @@ export async function demoRequest(
   function allowed(roles: readonly string[]) {
     if (!actor.roles.some((r) => roles.includes(r)))
       throw new Error("You do not have permission for this action");
+  }
+  if (entity === "consolidated") {
+    allowed(["admin", "manager", "reviewer", "signatory"]);
+    if (method === "GET") {
+      if (id === "options") return bundleContext(action);
+      return [...records.consolidated].reverse();
+    }
+    if (action === "withdraw") {
+      const row = records.consolidated.find((r) => r._id === id);
+      if (!row || row.status !== "draft")
+        throw new Error("Draft is no longer current");
+      requireVersion(Number(input.version), Number(row.version));
+      if (typeof input.reason !== "string" || input.reason.trim().length < 3)
+        throw new Error("Provide a withdrawal reason");
+      const before = structuredClone(row);
+      Object.assign(row, {
+        status: "withdrawn",
+        version: Number(row.version) + 1,
+      });
+      audit(row, "withdraw", before);
+      return row;
+    }
+    const data = consolidatedInput.parse(input);
+    const source = data.sourceId
+      ? records.consolidated.find((r) => r._id === data.sourceId)
+      : null;
+    if (
+      data.sourceId &&
+      (!source ||
+        source.status !== "draft" ||
+        source.trfId !== data.trfId ||
+        source.version !== data.sourceVersion)
+    )
+      throw new Error("Source draft changed or is no longer current");
+    const snapshot = captureConsolidated(data, {
+      ...bundleContext(data.trfId),
+      preparedBy: actor.name,
+      capturedAt: new Date().toISOString(),
+    });
+    const before = source ? structuredClone(source) : undefined;
+    if (source)
+      Object.assign(source, {
+        status: "superseded",
+        version: Number(source.version) + 1,
+      });
+    const row = {
+      _id: newId(),
+      number:
+        source?.number ??
+        "CTR-" + String(records.consolidated.length + 1).padStart(6, "0"),
+      trfId: data.trfId,
+      revision: source ? Number(source.revision) + 1 : 0,
+      status: "draft",
+      version: 0,
+      reason: data.reason,
+      snapshot,
+      createdAt: new Date().toISOString(),
+    };
+    records.consolidated.push(row);
+    audit(row, source ? "revision_created" : "draft_created", before);
+    return row;
   }
   if (entity === "billing-clients") {
     allowed(operationRoles.billing);
@@ -532,4 +650,16 @@ export async function demoReportPdf(id: string) {
   const row = records.reports.find((r) => r._id === id);
   if (!row) throw new Error("Report not found");
   return draftReportPdf(row as unknown as DraftReport);
+}
+
+export async function demoConsolidatedPdf(id: string) {
+  if (
+    !actor.roles.some((r) =>
+      ["admin", "manager", "reviewer", "signatory"].includes(r),
+    )
+  )
+    throw new Error("You do not have permission");
+  const row = records.consolidated.find((r) => r._id === id);
+  if (!row) throw new Error("Report not found");
+  return consolidatedPdf(row as unknown as ConsolidatedReport);
 }

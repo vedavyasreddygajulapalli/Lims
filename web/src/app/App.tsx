@@ -1,3 +1,4 @@
+import {ConsolidatedPage} from "../features/reports/ConsolidatedPage";
 import { OperationsPage } from "../features/operations/OperationsPage";
 import { WorkflowPage } from "../features/operations/WorkflowPage";
 import { SettingsPage } from "../features/operations/SettingsPage";
@@ -96,7 +97,7 @@ export function App() {
         </Notice>
       ) : page === "overview" ? (
         <DashboardPage navigate={setPage} user={user} />
-      ) : page === "settings" ? (
+      ) : page === "consolidated" ? (<ConsolidatedPage/>) : page === "settings" ? (
         <SettingsPage user={user} onSignedOut={() => setUser(null)} />
       ) : ["equipment", "quality", "billing", "documents"].includes(page) ? (
         <OperationsPage

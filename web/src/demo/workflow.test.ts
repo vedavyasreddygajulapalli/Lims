@@ -169,3 +169,82 @@ it("keeps payment entries unchanged on overpayment or a stale version", async ()
   expect(rows[0].paidMinor).toBe(3000);
   expect(rows[0].payments).toHaveLength(1);
 });
+
+it("consolidates exact snapshots, guards selections, revises and withdraws", async () => {
+  const trfs: any = await request("/trfs", "GET");
+  let context: any, trf: any;
+  for (const t of trfs.items) {
+    const c: any = await request("/consolidated/options/" + t._id, "GET");
+    if (c.tests.length) {
+      trf = t;
+      context = c;
+      break;
+    }
+  }
+  expect(context.tests.length).toBeGreaterThan(0);
+  const input = {
+    trfId: trf._id,
+    title: "Project consolidated report",
+    summary: "Draft test scope",
+    reason: "Review consolidated scope",
+    selections: context.tests
+      .slice(0, 3)
+      .map((t: any) => ({ id: t.id, version: t.version })),
+  };
+  await expect(
+    request("/consolidated", "POST", {
+      ...input,
+      selections: [{ ...input.selections[0], version: 999 }],
+    }),
+  ).rejects.toThrow(/changed/);
+  await expect(
+    request("/consolidated", "POST", {
+      ...input,
+      selections: [{ id: "999999999999999999999999", version: 0 }],
+    }),
+  ).rejects.toThrow(/belong/);
+  await expect(
+    request("/consolidated", "POST", {
+      ...input,
+      selections: [input.selections[0], input.selections[0]],
+    }),
+  ).rejects.toThrow();
+  const report: any = await request("/consolidated", "POST", input);
+  expect(report.snapshot.tests[0].observations).toEqual(
+    context.tests[0].observations,
+  );
+  const { demoConsolidatedPdf } = await import("./adapter");
+  const pdf = await PDFDocument.load(await demoConsolidatedPdf(report._id));
+  expect(pdf.getPageCount()).toBeGreaterThanOrEqual(5);
+  const revision: any = await request("/consolidated", "POST", {
+    ...input,
+    sourceId: report._id,
+    sourceVersion: 0,
+    reason: "Revised scope",
+  });
+  expect(revision.revision).toBe(1);
+  expect(revision.number).toBe(report.number);
+  await expect(
+    request("/consolidated", "POST", {
+      ...input,
+      sourceId: report._id,
+      sourceVersion: 0,
+    }),
+  ).rejects.toThrow(/changed|current/);
+  const rows: any = await request("/consolidated", "GET");
+  expect(rows.find((r: any) => r._id === report._id).snapshot).toEqual(
+    report.snapshot,
+  );
+  await request("/consolidated/" + revision._id + "/withdraw", "POST", {
+    version: 0,
+    reason: "Withdraw demonstration",
+  });
+  await expect(
+    request("/consolidated/" + revision._id + "/withdraw", "POST", {
+      version: 0,
+      reason: "Stale withdrawal",
+    }),
+  ).rejects.toThrow();
+  await persona("000000000000000000000002");
+  await expect(request("/consolidated", "GET")).rejects.toThrow(/permission/);
+});

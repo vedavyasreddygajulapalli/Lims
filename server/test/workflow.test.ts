@@ -377,3 +377,66 @@ test("review, draft revisions, equipment, ledger and session revocation", async 
   }).expect(204);
   await signatory.get("/api/reports").expect(401);
 });
+
+test("consolidated snapshots persist, enforce roles and revision conflicts", async () => {
+  const { Trf, Consolidated } = await import("../src/models.js");
+  const trf: any = await Trf.findOne();
+  await tech.get("/api/consolidated").expect(403);
+  await request(app).get("/api/consolidated").expect(401);
+  const context = (
+    await admin.get("/api/consolidated/options/" + trf._id).expect(200)
+  ).body;
+  const input = {
+    trfId: String(trf._id),
+    title: "Consolidated acceptance report",
+    summary: "Test scope",
+    reason: "Acceptance review",
+    selections: context.tests.map((t: any) => ({
+      id: t.id,
+      version: t.version,
+    })),
+  };
+  await post(admin, "consolidated", {
+    ...input,
+    selections: [{ ...input.selections[0], version: 999 }],
+  }).expect(409);
+  await post(admin, "consolidated", {
+    ...input,
+    selections: [{ id: new mongoose.Types.ObjectId().toString(), version: 0 }],
+  }).expect(409);
+  const report = (await post(admin, "consolidated", input).expect(201)).body;
+  assert.deepEqual(
+    report.snapshot.tests[0].observations,
+    context.tests[0].observations,
+  );
+  const pdf = await admin
+    .get("/api/consolidated/" + report._id + "/pdf")
+    .expect(200);
+  assert.match(pdf.headers["content-type"], /application\/pdf/);
+  const revision = (
+    await post(admin, "consolidated", {
+      ...input,
+      sourceId: report._id,
+      sourceVersion: 0,
+    }).expect(201)
+  ).body;
+  assert.equal(revision.revision, 1);
+  assert.equal(revision.number, report.number);
+  await post(admin, "consolidated", {
+    ...input,
+    sourceId: report._id,
+    sourceVersion: 0,
+  }).expect(409);
+  const saved: any = await Consolidated.findById(report._id).lean();
+  assert.equal(saved.status, "superseded");
+  assert.deepEqual(saved.snapshot, report.snapshot);
+  await post(admin, "consolidated/" + revision._id + "/withdraw", {
+    version: 0,
+    reason: "Withdraw test draft",
+  }).expect(200);
+  await post(admin, "consolidated/" + revision._id + "/withdraw", {
+    version: 0,
+    reason: "Stale request",
+  }).expect(409);
+  assert.equal(await Audit.countDocuments({ entity: "consolidated" }), 3);
+});

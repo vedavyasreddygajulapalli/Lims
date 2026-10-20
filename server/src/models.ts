@@ -180,6 +180,7 @@ export const operationModels = {
   billing: Billing,
   documents: Document,
 };
+export const Consolidated = model("Consolidated",{number:{type:String,required:true},trfId:ref("Trf"),revision:{type:Number,required:true},status:{type:String,enum:["draft","superseded","withdrawn"],default:"draft"},snapshot:{type:Schema.Types.Mixed,immutable:true},reason:String,version:{type:Number,default:0}},{number:1,revision:1});
 export const Counter = mongoose.model(
   "Counter",
   new Schema({ _id: String, value: Number }),
@@ -212,7 +213,7 @@ export async function initialize() {
     "QLT",
     "BIL",
     "DOC",
-    "RPT",
+    "RPT", "CTR",
   ])
     await Counter.updateOne(
       { _id: prefix },
@@ -234,7 +235,7 @@ export async function initialize() {
       Quality,
       Billing,
       Document,
-      Report,
+      Report, Consolidated,
     ].map((m) => m.init()),
   );
 }

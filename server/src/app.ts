@@ -1,3 +1,4 @@
+import {consolidatedRouter} from "./routes/consolidated.js";
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -38,7 +39,7 @@ export function createApp(origin: string, production = false) {
     usersRouter,
     dashboardRouter,
     referenceRouter,
-    workflowRouter,
+    consolidatedRouter, workflowRouter,
     operationsRouter,
     registersRouter,
     observationsRouter,

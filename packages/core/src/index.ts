@@ -5,3 +5,5 @@ export * from "./inputs.js";
 export * from "./workflow.js";
 export * from "./operations.js";
 export * from "./report.js";
+export * from "./consolidated.js";
+export * from "./consolidated-pdf.js";

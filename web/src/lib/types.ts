@@ -1,4 +1,5 @@
 export type Page =
+  | "consolidated"
   | "overview"
   | "clients"
   | "trfs"
@@ -17,6 +18,7 @@ export type Page =
   | "settings";
 export type RegisterPage = Exclude<
   Page,
+  | "consolidated"
   | "overview"
   | "reference"
   | "review"

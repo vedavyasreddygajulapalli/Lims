@@ -239,3 +239,31 @@ it("traps keyboard focus in a form and returns focus when closed", async () => {
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(document.activeElement).toBe(add);
 });
+
+it("creates a consolidated report through the shared workspace", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("heading", { name: "Laboratory overview" });
+  await u.click(screen.getByRole("button", { name: "Consolidated reports" }));
+  await u.click(
+    await screen.findByRole("button", { name: "Create consolidated report" }),
+  );
+  const select = (await screen.findByLabelText(
+    "Test request / project",
+  )) as HTMLSelectElement;
+  await waitFor(() => expect(select.options.length).toBeGreaterThan(1));
+  await u.selectOptions(select, select.options[1].value);
+  const checks = await screen.findAllByRole("checkbox");
+  await u.click(checks[0]);
+  await u.type(
+    screen.getByLabelText("Creation / revision reason"),
+    "Project draft review",
+  );
+  await u.click(
+    screen.getByRole("button", { name: "Save consolidated draft" }),
+  );
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await u.click(await screen.findByRole("button", { name: "View report" }));
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Download PDF" })).toBeTruthy();
+});

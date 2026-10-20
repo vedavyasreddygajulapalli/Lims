@@ -21,6 +21,7 @@ export const navigation = [
   { id: "samples", label: "Sample register", icon: Package },
   { id: "assignments", label: "Test assignments", icon: Microscope },
   { id: "review", label: "Review queue", icon: ShieldCheck },
+  { id: "consolidated", label: "Consolidated reports", icon: BookOpen },
   { id: "reports", label: "Draft reports", icon: ClipboardList },
   {
     id: "methods",
@@ -38,6 +39,7 @@ export const navigation = [
   { id: "settings", label: "Account & readiness", icon: Users },
 ] as const;
 export const titles: Record<Page, string> = {
+  consolidated:"Consolidated reports",
   review: "Review queue",
   reports: "Draft reports",
   equipment: "Equipment",
@@ -59,6 +61,7 @@ export function canView(page: Page, user: User) {
   if (page === "settings") return true;
   const operationAccess: Record<string, string[]> = {
     review: ["admin", "manager", "technician", "reviewer", "signatory"],
+    consolidated:["admin","manager","reviewer","signatory"],
     reports: ["admin", "manager", "reviewer", "signatory"],
     equipment: ["admin", "manager", "technician", "reviewer", "signatory"],
     quality: ["admin", "manager", "reviewer"],

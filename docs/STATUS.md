@@ -38,3 +38,7 @@ This is a development preview, not a production-ready LIMS or accreditation clai
 ## Acceptance follow-up
 
 Shared user validation and demo role enforcement now match the corresponding API rules. Inactive technicians are excluded from assignment choices; empty operation searches show feedback; navigation groups and modal width constraints were cleaned up. The test runner accepts a secure `TEST_MONGODB_URI` and isolates each run in a fresh test database. See `ACCEPTANCE.md` for exact coverage and outstanding access.
+
+## Consolidated report workspace
+
+Sainath Signature v1.0 adds one-project multi-test selection, immutable draft snapshots, revision/withdrawal audit trails and shared API/demo PDF rendering. The seven-page synthetic template has been visually inspected. Local production build, 22 unit tests and 15 UI/demo tests pass. The new real MongoDB consolidated scenario is awaiting CI verification. Browser visual QA remains unavailable in this workspace. See REPORTS.md.

@@ -67,3 +67,5 @@ export async function request<T>(
     );
   return content as T;
 }
+
+export async function downloadConsolidated(id:string,filename:string){let blob:Blob;if(isDemo){const{demoConsolidatedPdf}=await import('../demo/adapter');blob=new Blob([new Uint8Array(await demoConsolidatedPdf(id))],{type:'application/pdf'});}else{const response=await fetch('/api/consolidated/'+id+'/pdf',{credentials:'same-origin'});if(!response.ok)throw new Error('Could not download consolidated report');blob=await response.blob();}const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

@@ -200,6 +200,6 @@ export function makeFixtures(): Record<string, LabRecord[]> {
     quality,
     documents,
     billing: [],
-    reports: [],
+    reports: [], consolidated:[],
   };
 }
