@@ -18,7 +18,7 @@
 
 Build passes. 22 unit tests, 9 DOM UI tests and 4 demo workflow tests pass, including independent review → draft creation and billing → partial payment. Three published reference calculator outputs remain unchanged and match exactly. PDF pagination is exercised with 80 observations.
 
-MongoDB integration execution is blocked: the local MongoDB process exits with code 100 during setup. None of the database integration cases are considered passed. Additional API integration coverage is provided for review, equipment, report revision, ledger and account revocation, ready for a MongoDB-capable runner.
+GitHub Actions verified real MongoDB integration on 20 October 2026: 26 backend tests (including 4 API/database scenarios) and 13 UI/demo tests passed. Build and dependency installation passed. Evidence: https://github.com/vedavyasreddygajulapalli/Lims/actions/runs/39468928229. The local workspace restriction remains, but no longer blocks CI verification.
 
 DOM interaction tests are not visual browser testing. Desktop/mobile visual review, live database transactions and user acceptance remain required.
 
@@ -29,7 +29,7 @@ DOM interaction tests are not visual browser testing. Desktop/mobile visual revi
 3. Persistent backend deployment, secrets, backups and a tested restore. Render remains deferred.
 4. Email/WhatsApp provider setup, password recovery, document/file storage and instrument integrations.
 5. Laboratory-specific access, retention, migration and acceptance decisions; real user tests.
-6. Full database integration and visual browser checks on a supported environment.
+6. Visual browser checks and production-environment acceptance.
 
 Additional limits: operation lists and linked choices load the latest/first 200 records; document entries are references rather than uploads. Quality ownership uses names, not a personnel workflow. Equipment assignment is optional until method requirements are supplied. Draft PDFs escape non-ASCII characters explicitly. Audit history is application-managed, not cryptographically immutable. Access changes require another administrator for the acting account. Existing v0.2 database users require version/methodIds defaults before access updates. The synthetic preview is public at the owner's request; external messaging is not configured.
 

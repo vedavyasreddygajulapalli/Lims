@@ -1,4 +1,4 @@
-# Sri Sainath Laboratory LIMS — development v0.2
+# Sri Sainath Laboratory LIMS — development v0.3
 
 MERN + TypeScript + Tailwind CSS v4 with a shared core package, reusable UI components and a modern laboratory dashboard.
 
@@ -6,7 +6,7 @@ MERN + TypeScript + Tailwind CSS v4 with a shared core package, reusable UI comp
 
 ## Review the UI now
 
-Open `Sri_Sainath_LIMS_Preview.html` in a modern desktop browser. This self-contained demo requires no server or MongoDB. It includes sample intake charts, material distribution, recent requests, attention items, searchable registers, forms, observation rows, audit history and the reference calculator.
+Open the [public preview](https://sri-sainath-lims-preview.vedavyasreddy-gajula.chatgpt.site). For a local standalone copy, run `npm run preview:build` and open the generated `Sri_Sainath_LIMS_Preview.html`. This self-contained demo requires no server or MongoDB. It includes sample intake charts, material distribution, recent requests, attention items, searchable registers, forms, observation rows, audit history and the reference calculator.
 
 The preview's workflow records are **synthetic** and visibly labelled. Changes exist only in memory and reset on reload. Public numeric fixtures appear only in the reference workspace. The preview is not a working production database, login-security demonstration or authorized report system.
 
@@ -51,8 +51,8 @@ Open `http://localhost:5173` (exact origin). Sign in, create the team and add li
 
 ```bash
 npm run build             # shared core, API and production UI
-npm run test:unit         # 16 domain / arithmetic / dashboard checks
-npm run test -w web       # 5 UI interaction checks with the demo adapter
+npm run test:unit         # 22 domain / arithmetic / workflow checks
+npm run test -w web       # 13 UI/demo checks
 npm run test:integration  # full API/database scenarios; isolated MongoDB replica set
 npm test                 # all suites (requires MongoDB process support)
 npm run preview:build    # regenerate the standalone HTML demo
@@ -63,11 +63,11 @@ The test MongoDB instance may need to download its binary on first use. It does 
 ## Verification and limits
 
 - Production build passed.
-- 16 unit checks and 5 UI interaction checks passed.
+- 26 backend tests and 13 UI/demo tests passed in GitHub Actions.
 - All 3 published numeric fixtures matched to two decimal places.
 - The compiled self-contained preview rendered in a DOM runtime without external assets.
-- Full API/MongoDB integration tests remain unverified: this environment denied MongoDB startup with `open: Operation not permitted` in the preceding milestone.
-- DOM tests do not verify pixel layout. Desktop/mobile browser visual review is still pending; no live hosting was configured.
+- Real MongoDB API integration passed in [CI](https://github.com/vedavyasreddygajulapalli/Lims/actions/runs/39468928229).
+- DOM tests do not verify pixel layout. Desktop/mobile browser visual review is still pending; the public demo is hosted; production backend deployment is deferred.
 
 ## Deployment
 

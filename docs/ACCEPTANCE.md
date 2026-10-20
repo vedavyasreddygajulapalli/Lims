@@ -17,7 +17,7 @@ Use a dedicated test MongoDB replica set or test Atlas project. Configure `TEST_
 
 Run `npm ci`, `npm run build`, then `npm test` from the application source root. Without `TEST_MONGODB_URI`, the suite starts a local MongoDB replica set. With it, the suite creates a unique `lims_test_<random UUID>` database, checks transaction support, and cleans up only that generated database. It never uses the database named in the connection string. An interrupted test run may leave a database with this prefix for manual cleanup.
 
-The API cases cover role checks, links, immutable raw strings, concurrent version conflicts, unique numbering, audit records, independent-connection persistence, equipment, review/authorization, report creation/revision/withdrawal, partial payments, account deactivation and password-change session revocation. They are currently BLOCKED by local MongoDB `open: Operation not permitted`; no external test connection is configured.
+The API cases cover role checks, links, immutable raw strings, concurrent version conflicts, unique numbering, audit records, independent-connection persistence, equipment, review/authorization, report creation/revision/withdrawal, partial payments, account deactivation and password-change session revocation. They passed against a real isolated MongoDB replica set in GitHub Actions on 20 October 2026. No external database credentials were required. Evidence: https://github.com/vedavyasreddygajulapalli/Lims/actions/runs/39468928229. The local workspace still denies MongoDB startup.
 
 ## Visual browser acceptance — still pending
 
