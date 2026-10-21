@@ -9,3 +9,4 @@ export * from "./consolidated.js";
 export * from "./consolidated-pdf.js";
 export * from "./files.js";
 export * from "./appendices.js";
+export * from "./client-workspace.js";

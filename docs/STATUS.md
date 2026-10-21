@@ -48,3 +48,9 @@ Sainath Signature v1.0 adds one-project multi-test selection, immutable draft sn
 Implemented nested client folders, up to 100-file batches, version history, duplicate handling, provenance/category filters, bulk move/archive/restore and ZIP export through shared Tailwind components. Explicitly selected PDF/image versions can be pinned to consolidated draft reports. MongoDB stores metadata; the backend supports encrypted private Supabase objects, authenticated downloads, ClamAV scanning and a 900 MB application quota. ImageKit is not used. See FILES.md for activation and recovery.
 
 Live Supabase credentials, a private bucket, scanner hosting, persistent backend deployment and operational backup/restore verification are still required. The public preview uses synthetic data and local browser memory, with a 100 MB session limit. Visual browser review remains pending. Calculations are unchanged.
+
+## Client dashboard
+
+Clients → View now opens a dedicated client workspace with contact details, scoped counts, recent test requests, follow-up counts and permitted billing totals. Tabs include requests, samples, test assignments, individual/consolidated draft reports, billing/payment history, linked quality cases and embedded files/folders. Records have search and 50-row pagination. Existing record viewers and PDF download services are reused. Role-restricted totals and tabs are omitted server-side; unauthorized direct section requests are denied. No calculation or workflow permission was changed.
+
+Files remain scoped to the selected client inside this view. Global SOP/document register entries are not shown as client documents because they have no client relationship. Client documents belong in Files & folders. Accounts-only users retain their existing billing access rather than gaining technical client-register access.

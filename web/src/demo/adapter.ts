@@ -1,3 +1,4 @@
+import { demoClientWorkspace } from "./client-workspace";
 import { createDemoFiles } from "./files";
 import { appendReportFiles } from "@lims/core";
 import {
@@ -135,6 +136,11 @@ export async function demoRequest(
   method: string,
   body?: unknown,
 ): Promise<unknown> {
+  if (
+    method === "GET" &&
+    /^\/clients\/[a-f0-9]{24}\/workspace(?:\/records)?(?:\?|$)/.test(path)
+  )
+    return demoClientWorkspace(path, records, actor.roles, populate, files);
   if (path.startsWith("/files/"))
     return files.request(path, method, body ?? {});
   const url = new URL(path, "http://demo.local");

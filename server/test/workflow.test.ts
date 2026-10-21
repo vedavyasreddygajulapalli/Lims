@@ -643,3 +643,76 @@ test("client files: private uploads, folders, checksums, immutable versions, app
   assert.ok(list.total >= 1);
   assert.equal(JSON.stringify(list).includes("providerPath"), false);
 });
+
+test("client workspace isolates linked records, paginates and hides restricted billing", async () => {
+  const { Trf, Sample, Billing } = await import("../src/models.js");
+  const a: any = await Client.create({
+      number: "CLI-WORKSPACE-A",
+      name: "Workspace A",
+    }),
+    b: any = await Client.create({
+      number: "CLI-WORKSPACE-B",
+      name: "Workspace B",
+    });
+  const trfs = await Trf.insertMany(
+    Array.from({ length: 51 }, (_, i) => ({
+      number: "TRF-WORKSPACE-" + i,
+      clientId: a._id,
+      project: "Scoped project " + i,
+      site: "Example",
+      dueDate: "2026-12-01",
+    })),
+  );
+  await Trf.create({
+    number: "TRF-OTHER",
+    clientId: b._id,
+    project: "Other client secret",
+  });
+  await Sample.create({
+    number: "SMP-WORKSPACE",
+    trfId: trfs[0]._id,
+    description: "Scoped sample",
+    receiptStatus: "quarantined",
+  });
+  await Billing.create({
+    number: "BIL-WORKSPACE",
+    clientId: a._id,
+    amountMinor: 12345,
+    paidMinor: 2345,
+    status: "part_paid",
+  });
+  const path = "/api/clients/" + a._id + "/workspace";
+  await request(app).get(path).expect(401);
+  const summary = (await admin.get(path).expect(200)).body;
+  assert.equal(summary.counts.trfs, 51);
+  assert.equal(summary.counts.samples, 1);
+  assert.equal(summary.recentRequests.length, 5);
+  assert.equal(summary.billing.balanceMinor, 10000);
+  assert.equal(summary.attention.quarantined, 1);
+  const page1 = (await admin.get(path + "/records?section=trfs").expect(200))
+      .body,
+    page2 = (await admin.get(path + "/records?section=trfs&page=2").expect(200))
+      .body;
+  assert.equal(page1.total, 51);
+  assert.equal(page1.items.length, 50);
+  assert.equal(page2.items.length, 1);
+  assert.ok(
+    [...page1.items, ...page2.items].every(
+      (t: any) => t.clientId._id === String(a._id),
+    ),
+  );
+  assert.equal(
+    (await admin.get(path + "/records?section=trfs&q=Other").expect(200)).body
+      .total,
+    0,
+  );
+  const techSummary = (await tech.get(path).expect(200)).body;
+  assert.equal(techSummary.billing, undefined);
+  assert.equal(techSummary.counts.files, undefined);
+  await tech.get(path + "/records?section=billing").expect(403);
+  await tech.get(path + "/records?section=reports").expect(403);
+  await admin
+    .get("/api/clients/" + new mongoose.Types.ObjectId() + "/workspace")
+    .expect(404);
+  await admin.get(path + "/records?section=trfs&page=0").expect(400);
+});

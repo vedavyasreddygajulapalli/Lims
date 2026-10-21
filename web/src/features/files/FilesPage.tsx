@@ -40,9 +40,11 @@ import { formatBytes, downloadFiles, saveBlob } from "./api";
 export function FilesPage({
   user,
   initialClient = "",
+  lockedClient = false,
 }: {
   user: User;
   initialClient?: string;
+  lockedClient?: boolean;
 }) {
   const [clientId, setClient] = useState(initialClient),
     [clientSearch, setClientSearch] = useState(""),
@@ -166,7 +168,7 @@ export function FilesPage({
     <>
       <PageHeader
         eyebrow="CLIENT WORKSPACE"
-        title="Client files"
+        title={lockedClient ? "Files & folders" : "Client files"}
         description="Organize client documents, laboratory files and supporting evidence in one place."
         action={
           <Button
@@ -232,34 +234,36 @@ export function FilesPage({
         </Notice>
       )}
       {message && <Notice tone="green">{message}</Notice>}
-      <div className="my-5 grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Find client"
-          placeholder="Search company or client number"
-          value={clientSearch}
-          onChange={(e) => setClientSearch(e.target.value)}
-        />
-        <Select
-          label="Client file workspace"
-          value={clientId}
-          onChange={(e) => {
-            setClient(e.target.value);
-            setFolder("all");
-            setDetail(null);
-            setMessage("");
-          }}
-        >
-          <option value="">Select client</option>
-          {clientId && !clients.data?.some((c) => c._id === clientId) && (
-            <option value={clientId}>Selected client</option>
-          )}
-          {clients.data?.map((c) => (
-            <option value={c._id} key={c._id}>
-              {c.number} · {c.name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      {!lockedClient && (
+        <div className="my-5 grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Find client"
+            placeholder="Search company or client number"
+            value={clientSearch}
+            onChange={(e) => setClientSearch(e.target.value)}
+          />
+          <Select
+            label="Client file workspace"
+            value={clientId}
+            onChange={(e) => {
+              setClient(e.target.value);
+              setFolder("all");
+              setDetail(null);
+              setMessage("");
+            }}
+          >
+            <option value="">Select client</option>
+            {clientId && !clients.data?.some((c) => c._id === clientId) && (
+              <option value={clientId}>Selected client</option>
+            )}
+            {clients.data?.map((c) => (
+              <option value={c._id} key={c._id}>
+                {c.number} · {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
       {!clientId ? (
         <Empty
           title="Choose a client"

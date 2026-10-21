@@ -312,3 +312,33 @@ it("creates a client folder and uploads a file through the shared file workspace
   await screen.findByText("Version history");
   expect(screen.getByRole("button", { name: "Download v1" })).toBeTruthy();
 });
+
+it("opens a complete client dashboard, scoped records and embedded folders", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("heading", { name: "Laboratory overview" });
+  await u.click(screen.getByRole("button", { name: "Clients" }));
+  await u.click(await screen.findByRole("button", { name: "View CLI-000001" }));
+  await screen.findByRole("heading", { name: "Greenfield Infrastructure" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByText("client1@example.com")).toBeTruthy();
+  await screen.findByRole("heading", { name: "Account summary" });
+  await u.click(
+    within(
+      screen.getByRole("navigation", { name: "Client sections" }),
+    ).getByRole("button", { name: /Test requests/ }),
+  );
+  await screen.findByRole("button", { name: "View TRF-000001" });
+  expect(screen.queryByRole("button", { name: "View TRF-000002" })).toBeNull();
+  await u.click(screen.getByRole("button", { name: "View TRF-000001" }));
+  await screen.findByRole("dialog");
+  await u.keyboard("{Escape}");
+  await u.click(screen.getByRole("button", { name: "Open client files" }));
+  await screen.findByRole("button", { name: "Client instructions.pdf" });
+  expect(screen.queryByLabelText("Client file workspace")).toBeNull();
+  await u.click(screen.getByRole("button", { name: "Back to clients" }));
+  await screen.findByRole("heading", { name: "Clients" });
+  await u.click(await screen.findByRole("button", { name: "View CLI-000002" }));
+  await screen.findByRole("heading", { name: "Summit Buildworks" });
+  expect(screen.queryByText("client1@example.com")).toBeNull();
+});

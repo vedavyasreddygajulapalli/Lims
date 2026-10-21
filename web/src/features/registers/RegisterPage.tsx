@@ -1,3 +1,4 @@
+import { ClientWorkspace } from "../clients/ClientWorkspace";
 import { tw } from "../../styles/utilities";
 import { useState, useEffect } from "react";
 import { Plus, Search, RefreshCw, Download } from "lucide-react";
@@ -82,6 +83,18 @@ export function RegisterPage({
     a.click();
     URL.revokeObjectURL(url);
   }
+  if (page === "clients" && selected)
+    return (
+      <ClientWorkspace
+        key={selected._id + user.id}
+        clientId={selected._id}
+        user={user}
+        onBack={() => {
+          setSelected(null);
+          reload();
+        }}
+      />
+    );
   return (
     <>
       <PageHeader
