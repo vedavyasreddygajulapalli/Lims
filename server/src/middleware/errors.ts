@@ -17,10 +17,15 @@ export const errorHandler: ErrorRequestHandler = (
     return res.status(err.status).json({ error: err.message });
   if (err.code === 11000)
     return res.status(409).json({ error: "Duplicate record or assignment" });
+  if (err.type === "entity.too.large")
+    return res.status(413).json({ error: "File exceeds the upload limit" });
   if (err.type === "entity.parse.failed")
     return res.status(400).json({ error: "Invalid JSON" });
   console.error(err.name, err.message);
   return res
     .status(500)
-    .json({ error: "Request failed; no partial changes were saved" });
+    .json({
+      error:
+        "Request failed. Refresh to check the latest status before retrying",
+    });
 };

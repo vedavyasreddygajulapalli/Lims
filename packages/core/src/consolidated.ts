@@ -1,3 +1,4 @@
+import type { ReportAppendix } from "./files.js";
 import { z } from "zod";
 import { objectId } from "./operations.js";
 export const REPORT_TEMPLATE = {
@@ -8,6 +9,11 @@ export const REPORT_TEMPLATE = {
 } as const;
 export const consolidatedInput = z
   .object({
+    appendixIds: z
+      .array(objectId)
+      .max(10)
+      .default([])
+      .refine((v) => new Set(v).size === v.length, "Duplicate appendix"),
     trfId: objectId,
     title: z.string().trim().min(3).max(100),
     summary: z.string().trim().max(1500).default(""),
@@ -54,6 +60,7 @@ export interface ConsolidatedTest {
   equipment: string;
 }
 export interface ConsolidatedSnapshot {
+  appendices?: ReportAppendix[];
   template: typeof REPORT_TEMPLATE;
   title: string;
   summary: string;

@@ -18,12 +18,14 @@ export function RecordDetail({
   user,
   onClose,
   onSaved,
+  onFiles,
 }: {
   initial: LabRecord;
   page: RegisterPage;
   user: User;
   onClose: () => void;
   onSaved: () => void;
+  onFiles?: (id: string) => void;
 }) {
   const [record, setRecord] = useState(initial),
     [rows, setRows] = useState(() =>
@@ -77,6 +79,15 @@ export function RecordDetail({
         if (!busy) onClose();
       }}
     >
+      {page === "clients" &&
+        onFiles &&
+        user.roles.some((r) =>
+          ["admin", "manager", "reception", "reviewer", "signatory"].includes(
+            r,
+          ),
+        ) && (
+          <Button onClick={() => onFiles(record._id)}>Open client files</Button>
+        )}
       <div className={tw("record-meta")}>
         <span>Record ID</span>
         <code>{record._id}</code>

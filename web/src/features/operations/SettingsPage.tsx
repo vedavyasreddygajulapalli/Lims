@@ -103,7 +103,7 @@ export function SettingsPage({
               ],
               [
                 "Document storage",
-                "Reference tracking only; file uploads are not connected.",
+                "Client files supports private Supabase storage. Check its storage status; credentials, encryption and malware scanning must be configured.",
               ],
               [
                 "Acceptance testing",

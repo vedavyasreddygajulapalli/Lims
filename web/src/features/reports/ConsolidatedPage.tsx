@@ -1,3 +1,4 @@
+import { AppendixPicker } from "../files/AppendixPicker";
 import { useEffect, useState } from "react";
 import {
   REPORT_TEMPLATE,
@@ -26,7 +27,9 @@ type Report = ConsolidatedReport & {
   trfId: string;
   version: number;
 };
-type Context = Pick<ConsolidatedSnapshot, "client" | "request" | "tests">;
+type Context = Pick<ConsolidatedSnapshot, "client" | "request" | "tests"> & {
+  clientId: string;
+};
 export function ConsolidatedPage() {
   const list = useQuery<Report[]>("/consolidated");
   const [compose, setCompose] = useState(false),
@@ -248,6 +251,16 @@ export function ConsolidatedPage() {
                 </p>
               </details>
             ))}
+            {!!detail.snapshot.appendices?.length && (
+              <section className="rounded-xl border border-slate-200 p-4">
+                <h3 className="font-semibold">Pinned appendices</h3>
+                {detail.snapshot.appendices.map((a) => (
+                  <p key={a.versionId} className="mt-2 text-sm text-slate-600">
+                    {a.name} · Version {a.revision}
+                  </p>
+                ))}
+              </section>
+            )}
             <Button onClick={() => download(detail)}>Download PDF</Button>
           </div>
         </Modal>
@@ -303,6 +316,9 @@ function Compose({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [appendixIds, setAppendixIds] = useState<string[]>(
+    source?.snapshot.appendices?.map((a) => a.versionId) ?? [],
+  );
   const [query, setQuery] = useState(""),
     [trf, setTrf] = useState(source?.trfId ?? ""),
     [context, setContext] = useState<Context | null>(null),
@@ -352,6 +368,7 @@ function Compose({
         return { id, version: t.version };
       });
       await request("/consolidated", "POST", {
+        appendixIds,
         trfId: trf,
         title,
         summary,
@@ -397,6 +414,7 @@ function Compose({
               onChange={(e) => {
                 setTrf(e.target.value);
                 setSelected([]);
+                setAppendixIds([]);
               }}
             >
               <option value="">Select a request</option>
@@ -492,6 +510,14 @@ function Compose({
               )}
             </>
           )
+        )}
+        {context && (
+          <AppendixPicker
+            clientId={context.clientId}
+            trfId={trf}
+            selected={appendixIds}
+            onChange={setAppendixIds}
+          />
         )}
         <Field
           label="Report title"

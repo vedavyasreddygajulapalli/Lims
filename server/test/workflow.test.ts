@@ -440,3 +440,206 @@ test("consolidated snapshots persist, enforce roles and revision conflicts", asy
   }).expect(409);
   assert.equal(await Audit.countDocuments({ entity: "consolidated" }), 3);
 });
+
+test("client files: private uploads, folders, checksums, immutable versions, appendices and role guards", async () => {
+  const { FileAsset, FileVersion, FileBudget } =
+    await import("../src/files/models.js");
+  const { hashFile } = await import("../src/files/storage.js");
+  const { PDFDocument } = await import("pdf-lib");
+  const objects = new Map<string, Buffer>();
+  let scans = 0,
+    puts = 0;
+  const storage = {
+    ready: () => true,
+    scan: async (data: Buffer) => {
+      scans++;
+      if (data.includes(Buffer.from("MALWARE")))
+        throw new Error("Rejected test scan");
+    },
+    put: async (id: string, data: Buffer) => {
+      puts++;
+      objects.set(id, Buffer.from(data));
+      return { id, path: "/test/" + id };
+    },
+    get: async (o: any) => Buffer.from(objects.get(o.id)!),
+    remove: async (id: string) => {
+      objects.delete(id);
+    },
+  };
+  const fileApp = createApp(origin, false, storage);
+  const staff = request.agent(fileApp);
+  await post(staff, "auth/login", {
+    email: "admin@test.in",
+    password: "Testing-password-123",
+  }).expect(200);
+  const { Trf } = await import("../src/models.js");
+  const trf: any = await Trf.findOne();
+  const clientId = String(trf.clientId);
+  const folder = (
+    await post(staff, "files/folders", {
+      clientId,
+      name: "Client shared",
+      parentId: null,
+    }).expect(201)
+  ).body;
+  const child = (
+    await post(staff, "files/folders", {
+      clientId,
+      name: "Project documents",
+      parentId: folder._id,
+    }).expect(201)
+  ).body;
+  await staff
+    .patch("/api/files/folders/" + folder._id)
+    .set("Origin", origin)
+    .send({
+      version: 0,
+      parentId: child._id,
+      name: "Client shared",
+      reason: "Invalid cycle",
+    })
+    .expect(422);
+  const pdf = await PDFDocument.create();
+  pdf.addPage();
+  const data = Buffer.from(await pdf.save());
+  const meta = {
+    clientId,
+    folderId: folder._id,
+    name: "instructions.pdf",
+    category: "technical",
+    source: "client",
+    visibility: "report_eligible",
+    trfId: String(trf._id),
+    sampleId: null,
+    size: data.length,
+    sha256: hashFile(data),
+    reason: "Received from client",
+    description: "Client instructions",
+  };
+  const prepare = async (p: any = {}) =>
+    (
+      await post(staff, "files/uploads", {
+        ...meta,
+        requestKey: randomUUID(),
+        ...p,
+      }).expect(201)
+    ).body;
+  const send = (id: string, bytes: Buffer) =>
+    staff
+      .put("/api/files/uploads/" + id)
+      .set("Origin", origin)
+      .set("Content-Type", "application/octet-stream")
+      .send(bytes);
+  const first = await prepare();
+  await send(first.upload._id, data).expect(200);
+  assert.equal(scans, 1);
+  assert.equal(puts, 1);
+  await send(first.upload._id, data).expect(200);
+  assert.equal(puts, 1);
+  const dup = await prepare();
+  assert.equal(dup.skipped, true);
+  const assetId = first.upload.assetId;
+  let a: any = await FileAsset.findById(assetId).lean();
+  const secondPdf = await PDFDocument.create();
+  secondPdf.addPage();
+  secondPdf.addPage();
+  const next = Buffer.from(await secondPdf.save());
+  const second = await prepare({
+    assetId,
+    assetVersion: a.version,
+    size: next.length,
+    sha256: hashFile(next),
+  });
+  await send(second.upload._id, next).expect(200);
+  assert.deepEqual(objects.get(first.upload._id), data);
+  const wrong = await prepare({
+    name: "mismatch.pdf",
+    sha256: "a".repeat(64),
+    duplicate: "keep",
+  });
+  await send(wrong.upload._id, data).expect(422);
+  assert.equal(
+    (await FileVersion.findById(wrong.upload._id))!.status,
+    "failed",
+  );
+  const budgetBefore = (await FileBudget.findById("client-files"))!.bytes;
+  const malware = Buffer.concat([data, Buffer.from("MALWARE")]);
+  const infected = await prepare({
+    name: "infected.pdf",
+    size: malware.length,
+    sha256: hashFile(malware),
+    duplicate: "keep",
+  });
+  await send(infected.upload._id, malware).expect(502);
+  assert.equal(
+    (await FileBudget.findById("client-files"))!.bytes,
+    budgetBefore,
+  );
+  assert.equal(puts, 2);
+  await request(fileApp)
+    .get("/api/files/versions/" + first.upload._id + "/download")
+    .expect(401);
+  const technician = request.agent(fileApp);
+  await post(technician, "auth/login", {
+    email: "tech@test.in",
+    password: "Testing-password-123",
+  }).expect(200);
+  await technician.get("/api/files/list?clientId=" + clientId).expect(403);
+  const download = await staff
+    .get("/api/files/versions/" + first.upload._id + "/download")
+    .expect(200);
+  assert.deepEqual(download.body, data);
+  assert.match(download.headers["content-disposition"], /attachment/);
+  const context = (
+    await staff.get("/api/consolidated/options/" + trf._id).expect(200)
+  ).body;
+  const report = (
+    await post(staff, "consolidated", {
+      trfId: String(trf._id),
+      title: "Report with evidence",
+      reason: "Capture first evidence version",
+      selections: context.tests.map((t: any) => ({
+        id: t.id,
+        version: t.version,
+      })),
+      appendixIds: [first.upload._id],
+    }).expect(201)
+  ).body;
+  assert.equal(report.snapshot.appendices[0].revision, 1);
+  const reportPdf = await staff
+    .get("/api/consolidated/" + report._id + "/pdf")
+    .expect(200);
+  assert.ok((await PDFDocument.load(reportPdf.body)).getPageCount() >= 6);
+  a = await FileAsset.findById(assetId).lean();
+  await post(staff, "files/bulk", {
+    clientId,
+    items: [{ id: assetId, version: a.version }],
+    action: "archive",
+    reason: "Archive obsolete evidence",
+  }).expect(200);
+  await post(staff, "files/bulk", {
+    clientId,
+    items: [{ id: assetId, version: a.version }],
+    action: "restore",
+    reason: "Stale restore",
+  }).expect(409);
+  await staff.get("/api/consolidated/" + report._id + "/pdf").expect(200);
+  a = await FileAsset.findById(assetId).lean();
+  await post(staff, "files/bulk", {
+    clientId,
+    items: [{ id: assetId, version: a.version }],
+    action: "restore",
+    reason: "Restore evidence",
+  }).expect(200);
+  const other: any = await Client.findOne({ _id: { $ne: clientId } });
+  await post(staff, "files/uploads", {
+    ...meta,
+    clientId: String(other._id),
+    requestKey: randomUUID(),
+  }).expect(422);
+  const list = (
+    await staff.get("/api/files/list?clientId=" + clientId).expect(200)
+  ).body;
+  assert.ok(list.total >= 1);
+  assert.equal(JSON.stringify(list).includes("providerPath"), false);
+});

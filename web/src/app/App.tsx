@@ -1,4 +1,5 @@
-import {ConsolidatedPage} from "../features/reports/ConsolidatedPage";
+import { FilesPage } from "../features/files/FilesPage";
+import { ConsolidatedPage } from "../features/reports/ConsolidatedPage";
 import { OperationsPage } from "../features/operations/OperationsPage";
 import { WorkflowPage } from "../features/operations/WorkflowPage";
 import { SettingsPage } from "../features/operations/SettingsPage";
@@ -14,6 +15,7 @@ import { canView } from "./navigation";
 import { request } from "../lib/client";
 import type { Page, User } from "../lib/types";
 export function App() {
+  const [fileClient, setFileClient] = useState("");
   const [user, setUser] = useState<User | null>(null),
     [ready, setReady] = useState(false),
     [page, setPage] = useState<Page>("overview"),
@@ -97,7 +99,11 @@ export function App() {
         </Notice>
       ) : page === "overview" ? (
         <DashboardPage navigate={setPage} user={user} />
-      ) : page === "consolidated" ? (<ConsolidatedPage/>) : page === "settings" ? (
+      ) : page === "files" ? (
+        <FilesPage key={user.id} user={user} initialClient={fileClient} />
+      ) : page === "consolidated" ? (
+        <ConsolidatedPage />
+      ) : page === "settings" ? (
         <SettingsPage user={user} onSignedOut={() => setUser(null)} />
       ) : ["equipment", "quality", "billing", "documents"].includes(page) ? (
         <OperationsPage
@@ -112,6 +118,10 @@ export function App() {
       ) : (
         <RegisterPage
           key={page}
+          onFiles={(id) => {
+            setFileClient(id);
+            setPage("files");
+          }}
           page={page as import("../lib/types").RegisterPage}
           user={user}
         />

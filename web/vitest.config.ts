@@ -4,6 +4,8 @@ export default defineConfig({
   esbuild: { jsx: "automatic" },
   test: {
     environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
+    testTimeout: 15000,
     include: ["src/**/*.test.{ts,tsx}"],
     maxWorkers: 1,
     minWorkers: 1,

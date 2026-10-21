@@ -1,3 +1,4 @@
+import { initializeFiles } from "./files/models.js";
 import mongoose, { Schema } from "mongoose";
 const ref = (model: string) => ({
   type: Schema.Types.ObjectId,
@@ -180,7 +181,23 @@ export const operationModels = {
   billing: Billing,
   documents: Document,
 };
-export const Consolidated = model("Consolidated",{number:{type:String,required:true},trfId:ref("Trf"),revision:{type:Number,required:true},status:{type:String,enum:["draft","superseded","withdrawn"],default:"draft"},snapshot:{type:Schema.Types.Mixed,immutable:true},reason:String,version:{type:Number,default:0}},{number:1,revision:1});
+export const Consolidated = model(
+  "Consolidated",
+  {
+    number: { type: String, required: true },
+    trfId: ref("Trf"),
+    revision: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ["draft", "superseded", "withdrawn"],
+      default: "draft",
+    },
+    snapshot: { type: Schema.Types.Mixed, immutable: true },
+    reason: String,
+    version: { type: Number, default: 0 },
+  },
+  { number: 1, revision: 1 },
+);
 export const Counter = mongoose.model(
   "Counter",
   new Schema({ _id: String, value: Number }),
@@ -204,6 +221,7 @@ export async function nextNumber(
   return `${prefix}-${String(counter!.value).padStart(6, "0")}`;
 }
 export async function initialize() {
+  await initializeFiles();
   for (const prefix of [
     "CLI",
     "TRF",
@@ -213,7 +231,8 @@ export async function initialize() {
     "QLT",
     "BIL",
     "DOC",
-    "RPT", "CTR",
+    "RPT",
+    "CTR",
   ])
     await Counter.updateOne(
       { _id: prefix },
@@ -235,7 +254,8 @@ export async function initialize() {
       Quality,
       Billing,
       Document,
-      Report, Consolidated,
+      Report,
+      Consolidated,
     ].map((m) => m.init()),
   );
 }

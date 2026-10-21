@@ -1,4 +1,6 @@
-import {consolidatedRouter} from "./routes/consolidated.js";
+import { fileRouter } from "./files/router.js";
+import { SupabaseStorage, type FileStorage } from "./files/storage.js";
+import { consolidatedRouter } from "./routes/consolidated.js";
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -13,7 +15,11 @@ import { referenceRouter } from "./routes/reference.js";
 import { errorHandler } from "./middleware/errors.js";
 import { workflowRouter } from "./routes/workflow.js";
 import { operationsRouter } from "./routes/operations.js";
-export function createApp(origin: string, production = false) {
+export function createApp(
+  origin: string,
+  production = false,
+  storage: FileStorage = new SupabaseStorage(),
+) {
   const app = express();
   app.disable("x-powered-by");
   app.use(helmet());
@@ -39,7 +45,9 @@ export function createApp(origin: string, production = false) {
     usersRouter,
     dashboardRouter,
     referenceRouter,
-    consolidatedRouter, workflowRouter,
+    fileRouter(storage),
+    consolidatedRouter(storage),
+    workflowRouter,
     operationsRouter,
     registersRouter,
     observationsRouter,

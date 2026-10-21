@@ -24,7 +24,15 @@ import {
   type PageResult,
   type User,
 } from "../../lib/types";
-export function RegisterPage({ page, user }: { page: Page; user: User }) {
+export function RegisterPage({
+  page,
+  user,
+  onFiles,
+}: {
+  page: Page;
+  user: User;
+  onFiles?: (id: string) => void;
+}) {
   const [index, setIndex] = useState(1),
     [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
@@ -196,6 +204,7 @@ export function RegisterPage({ page, user }: { page: Page; user: User }) {
       )}
       {selected && (
         <RecordDetail
+          onFiles={onFiles}
           initial={selected}
           page={page}
           user={user}

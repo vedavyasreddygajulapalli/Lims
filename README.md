@@ -84,3 +84,9 @@ Production build, all five UI interaction tests and the standalone preview were 
 ## v0.3 update
 
 Added connected observation review, draft reports/PDFs, equipment, quality cases, billing ledger, document references and account/access controls. See `docs/STATUS.md` for tested behavior and remaining gates. Formula implementation and final report issuance remain blocked pending the laboratory source sheets. Render deployment remains deferred. The hosted preview uses synthetic, temporary data and separate demo personas.
+
+## Client files and report attachments
+
+Open **Client files**, or **Files** from a client record. Create named folders, import up to 100 documents, separate client/laboratory material, view versions, archive/restore, export ZIPs and pin eligible PDF/image versions to a consolidated draft. Shared Tailwind components and server-side role checks apply throughout. The preview stores selected files only for the current browser session.
+
+Live storage uses **Supabase private storage**, not ImageKit, with backend encryption and mandatory malware scanning. It is disabled until configured. See [file setup, limits and recovery](docs/FILES.md). Free-plan capacity and bandwidth limits apply; no paid service is provisioned.

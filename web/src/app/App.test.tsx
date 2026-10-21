@@ -265,5 +265,50 @@ it("creates a consolidated report through the shared workspace", async () => {
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await u.click(await screen.findByRole("button", { name: "View report" }));
   expect(screen.getByRole("dialog")).toBeTruthy();
-  expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Download PDF" })).toBeTruthy();
+  expect(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Download PDF",
+    }),
+  ).toBeTruthy();
+});
+
+it("creates a client folder and uploads a file through the shared file workspace", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("heading", { name: "Laboratory overview" });
+  await u.click(screen.getByRole("button", { name: "Client files" }));
+  await screen.findByRole("heading", { name: "Client files" });
+  await screen.findByRole("button", { name: "Client instructions.pdf" });
+  await u.click(screen.getByRole("button", { name: "Create folder" }));
+  await u.type(screen.getByLabelText("Folder name"), "Project acceptance");
+  await u.click(screen.getByRole("button", { name: "Save folder" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await u.click(
+    await screen.findByRole("button", { name: "Project acceptance" }),
+  );
+  await u.click(screen.getByRole("button", { name: "Upload files" }));
+  const { demoRequest, demoFileDownload } = await import("../demo/adapter");
+  const rows: any = await demoRequest(
+    "/files/list?clientId=00000000000000000000000a",
+    "GET",
+  );
+  const b = await demoFileDownload(rows.items[0].currentId);
+  await u.upload(
+    screen.getByLabelText("Choose upload files"),
+    new File([await b.arrayBuffer()], "Client plan.pdf", {
+      type: "application/pdf",
+    }),
+  );
+  await u.type(
+    screen.getByLabelText("Upload reason"),
+    "Received client drawing",
+  );
+  await u.click(screen.getByRole("button", { name: "Start upload" }));
+  await screen.findByText("complete");
+  await u.click(
+    within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }),
+  );
+  await u.click(await screen.findByRole("button", { name: "Client plan.pdf" }));
+  await screen.findByText("Version history");
+  expect(screen.getByRole("button", { name: "Download v1" })).toBeTruthy();
 });

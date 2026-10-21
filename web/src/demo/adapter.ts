@@ -1,3 +1,5 @@
+import { createDemoFiles } from "./files";
+import { appendReportFiles } from "@lims/core";
 import {
   consolidatedInput,
   captureConsolidated,
@@ -32,10 +34,27 @@ import type { LabRecord } from "../lib/types";
 let records = makeFixtures();
 let nextId = 1000;
 let actor = { ...demoUser };
+const fileStore = () =>
+  createDemoFiles(
+    () => records,
+    () => actor,
+    (id, action, detail) =>
+      records.audit.push({
+        _id: (++nextId).toString(16).padStart(24, "0"),
+        entity: "files",
+        entityId: id,
+        action,
+        after: detail,
+        actorId: actor.id,
+        createdAt: new Date().toISOString(),
+      }),
+  );
+let files = fileStore();
 export function resetDemo() {
   records = makeFixtures();
   nextId = 1000;
   actor = { ...demoUser };
+  files = fileStore();
 }
 const relations: Record<string, string> = {
   clientId: "clients",
@@ -92,6 +111,7 @@ function bundleContext(trfId: string) {
       };
     });
   return {
+    clientId: String(client._id),
     client: {
       name: String(client.name),
       contact: String(client.contact),
@@ -115,6 +135,8 @@ export async function demoRequest(
   method: string,
   body?: unknown,
 ): Promise<unknown> {
+  if (path.startsWith("/files/"))
+    return files.request(path, method, body ?? {});
   const url = new URL(path, "http://demo.local");
   const parts = url.pathname.split("/").filter(Boolean);
   const [entity, id, action] = parts;
@@ -191,6 +213,12 @@ export async function demoRequest(
       preparedBy: actor.name,
       capturedAt: new Date().toISOString(),
     });
+    const trf = records.trfs.find((r) => r._id === data.trfId)!;
+    snapshot.appendices = await files.appendices(
+      data.appendixIds,
+      String(trf.clientId),
+      data.trfId,
+    );
     const before = source ? structuredClone(source) : undefined;
     if (source)
       Object.assign(source, {
@@ -661,5 +689,23 @@ export async function demoConsolidatedPdf(id: string) {
     throw new Error("You do not have permission");
   const row = records.consolidated.find((r) => r._id === id);
   if (!row) throw new Error("Report not found");
-  return consolidatedPdf(row as unknown as ConsolidatedReport);
+  const report = row as unknown as ConsolidatedReport;
+  const attachments = [];
+  for (const meta of report.snapshot.appendices ?? [])
+    attachments.push({
+      meta,
+      bytes: new Uint8Array(
+        await (await files.download(meta.versionId)).arrayBuffer(),
+      ),
+    });
+  return appendReportFiles(
+    await consolidatedPdf(report),
+    report.number,
+    report.revision,
+    attachments,
+  );
 }
+
+export const demoFileUpload = (id: string, file: Blob) =>
+  files.upload(id, file);
+export const demoFileDownload = (id: string) => files.download(id);

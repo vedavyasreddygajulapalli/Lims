@@ -27,7 +27,7 @@ DOM interaction tests are not visual browser testing. Desktop/mobile visual revi
 1. Original formulas, rounding rules, source sheets and expected intermediate/final outputs from the laboratory. No production formula was added or changed.
 2. Original report layout, final result locking/issuance, digital signatures and verification policy.
 3. Persistent backend deployment, secrets, backups and a tested restore. Render remains deferred.
-4. Email/WhatsApp provider setup, password recovery, document/file storage and instrument integrations.
+4. Email/WhatsApp provider setup, password recovery, live file-storage activation and instrument integrations.
 5. Laboratory-specific access, retention, migration and acceptance decisions; real user tests.
 6. Visual browser checks and production-environment acceptance.
 
@@ -42,3 +42,9 @@ Shared user validation and demo role enforcement now match the corresponding API
 ## Consolidated report workspace
 
 Sainath Signature v1.0 adds one-project multi-test selection, immutable draft snapshots, revision/withdrawal audit trails and shared API/demo PDF rendering. The seven-page synthetic template has been visually inspected. Local production build, 22 unit tests and 15 UI/demo tests pass. GitHub Actions verified all 42 tests: 22 unit, 5 MongoDB/API scenarios and 15 UI/demo tests. Evidence: https://github.com/vedavyasreddygajulapalli/Lims/actions/runs/39471634553. Browser visual QA remains unavailable in this workspace. See REPORTS.md.
+
+## Client files workspace
+
+Implemented nested client folders, up to 100-file batches, version history, duplicate handling, provenance/category filters, bulk move/archive/restore and ZIP export through shared Tailwind components. Explicitly selected PDF/image versions can be pinned to consolidated draft reports. MongoDB stores metadata; the backend supports encrypted private Supabase objects, authenticated downloads, ClamAV scanning and a 900 MB application quota. ImageKit is not used. See FILES.md for activation and recovery.
+
+Live Supabase credentials, a private bucket, scanner hosting, persistent backend deployment and operational backup/restore verification are still required. The public preview uses synthetic data and local browser memory, with a 100 MB session limit. Visual browser review remains pending. Calculations are unchanged.
