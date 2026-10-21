@@ -21,12 +21,14 @@ export function RecordForm({
   page,
   onClose,
   onSaved,
+  initialValues = {},
 }: {
   page: RegisterPage;
   onClose: () => void;
   onSaved: () => void;
+  initialValues?: Record<string, string>;
 }) {
-  const [form, setForm] = useState<Record<string, string>>({}),
+  const [form, setForm] = useState<Record<string, string>>(initialValues),
     [choices, setChoices] = useState<Record<string, LabRecord[]>>({}),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
@@ -124,7 +126,10 @@ export function RecordForm({
                   label={f.label}
                   required
                   value={form[f.key] ?? ""}
-                  disabled={f.key === "methodId" && !form.sampleId}
+                  disabled={
+                    Boolean(initialValues[f.key]) ||
+                    (f.key === "methodId" && !form.sampleId)
+                  }
                   onChange={(e) => change(e.target.value)}
                 >
                   <option value="">Select {f.label.toLowerCase()}</option>

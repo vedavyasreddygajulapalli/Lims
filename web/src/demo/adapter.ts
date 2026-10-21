@@ -1,3 +1,4 @@
+import { demoSearch } from "./productivity";
 import { demoClientWorkspace } from "./client-workspace";
 import { createDemoFiles } from "./files";
 import { appendReportFiles } from "@lims/core";
@@ -138,7 +139,9 @@ export async function demoRequest(
 ): Promise<unknown> {
   if (
     method === "GET" &&
-    /^\/clients\/[a-f0-9]{24}\/workspace(?:\/records)?(?:\?|$)/.test(path)
+    /^\/clients\/[a-f0-9]{24}\/workspace(?:\/(?:records|activity))?(?:\?|$)/.test(
+      path,
+    )
   )
     return demoClientWorkspace(path, records, actor.roles, populate, files);
   if (path.startsWith("/files/"))
@@ -146,6 +149,13 @@ export async function demoRequest(
   const url = new URL(path, "http://demo.local");
   const parts = url.pathname.split("/").filter(Boolean);
   const [entity, id, action] = parts;
+  if (entity === "search" && method === "GET")
+    return demoSearch(
+      url.searchParams.get("q") ?? "",
+      records,
+      actor.roles,
+      files,
+    );
   const input = (body ?? {}) as Record<string, unknown>;
   if (entity === "auth") {
     if (id === "persona") {

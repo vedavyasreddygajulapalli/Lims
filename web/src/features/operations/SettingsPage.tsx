@@ -1,3 +1,4 @@
+import { useUnsaved } from "../../lib/unsaved";
 import { useState } from "react";
 import { Button, Card, Field, Notice, PageHeader } from "../../components/ui";
 import { request, isDemo } from "../../lib/client";
@@ -9,6 +10,8 @@ export function SettingsPage({
   user: User;
   onSignedOut: () => void;
 }) {
+  const [dirty, setDirty] = useState(false);
+  useUnsaved(dirty);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   async function change(e: React.FormEvent<HTMLFormElement>) {
@@ -49,7 +52,11 @@ export function SettingsPage({
               Password changes are unavailable in this synthetic preview.
             </Notice>
           ) : (
-            <form className="space-y-4" onSubmit={change}>
+            <form
+              className="space-y-4"
+              onChange={() => setDirty(true)}
+              onSubmit={change}
+            >
               {error && <Notice tone="red">{error}</Notice>}
               <Field
                 label="Current password"

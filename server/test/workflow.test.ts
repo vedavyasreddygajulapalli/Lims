@@ -716,3 +716,52 @@ test("client workspace isolates linked records, paginates and hides restricted b
     .expect(404);
   await admin.get(path + "/records?section=trfs&page=0").expect(400);
 });
+
+test("global search and client activity enforce role and client boundaries", async () => {
+  const { Billing, Trf } = await import("../src/models.js");
+  const client: any = await Client.findOne({ number: "CLI-WORKSPACE-A" }),
+    other: any = await Client.findOne({ number: "CLI-WORKSPACE-B" }),
+    bill: any = await Billing.findOne({ clientId: client._id }),
+    actor: any = await User.findOne({ email: "admin@test.in" });
+  await Audit.create({
+    actorId: actor._id,
+    entity: "billing",
+    entityId: bill._id,
+    action: "payment_recorded",
+    before: { secret: "private" },
+    after: { secret: "private" },
+    reason: "Private note",
+  });
+  const path = "/api/clients/" + client._id + "/workspace/activity";
+  const activity = (await admin.get(path).expect(200)).body;
+  assert.ok(activity.items.some((r: any) => r.entity === "billing"));
+  assert.equal(JSON.stringify(activity).includes("private"), false);
+  const restricted = (await tech.get(path).expect(200)).body;
+  assert.ok(restricted.items.every((r: any) => r.entity !== "billing"));
+  assert.equal(
+    (
+      await admin
+        .get("/api/clients/" + other._id + "/workspace/activity")
+        .expect(200)
+    ).body.items.some((r: any) => r.entity === "billing"),
+    false,
+  );
+  await request(app).get("/api/search?q=Workspace").expect(401);
+  const search = (await admin.get("/api/search?q=Workspace").expect(200)).body;
+  assert.ok(
+    search.items.some(
+      (r: any) => r.kind === "clients" && r.id === String(client._id),
+    ),
+  );
+  assert.equal(
+    (await tech.get("/api/search?q=instructions").expect(200)).body.items.some(
+      (r: any) => r.kind === "files",
+    ),
+    false,
+  );
+  await admin.get("/api/search?q=" + "a".repeat(101)).expect(400);
+  assert.equal(
+    (await admin.get("/api/search?q=%5B").expect(200)).body.items.length,
+    0,
+  );
+});

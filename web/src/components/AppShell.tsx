@@ -18,12 +18,14 @@ export function AppShell({
   navigate,
   onLogout,
   children,
+  search,
 }: {
   user: User;
   page: Page;
   navigate: (p: Page) => void;
   onLogout: () => void;
   children: ReactNode;
+  search?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -130,6 +132,7 @@ export function AppShell({
             </span>
           </div>
           <div className={tw("topbar-right")}>
+            {search}
             <span className={tw("environment")}>
               <span />
               {isDemo ? "Demo · synthetic records" : "Development"}

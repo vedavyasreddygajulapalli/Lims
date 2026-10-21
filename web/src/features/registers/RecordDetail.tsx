@@ -1,6 +1,8 @@
+import { updateWork } from "../../lib/recent";
+import { nextStep } from "@lims/core";
 import { AccessEditor } from "../operations/AccessEditor";
 import { tw } from "../../styles/utilities";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, LockKeyhole } from "lucide-react";
 import { Modal, Field, Button, Notice } from "../../components/ui";
 import {
@@ -37,6 +39,25 @@ export function RecordDetail({
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (["clients", "trfs", "samples", "assignments"].includes(page))
+      updateWork(
+        user.id,
+        {
+          id: initial._id,
+          kind: page as any,
+          label: String(initial.number ?? initial.name),
+          detail: String(
+            initial.name ??
+              initial.project ??
+              initial.description ??
+              initial.status ??
+              "",
+          ),
+        },
+        "visit",
+      );
+  }, [initial._id, user.id, page]);
   const editable =
     page === "assignments" &&
     idOf(record.technicianId) === user.id &&
@@ -75,6 +96,7 @@ export function RecordDetail({
     <Modal
       title={String(record.number ?? record.name ?? "Record details")}
       wide
+      cleanToken={record.version}
       onClose={() => {
         if (!busy) onClose();
       }}
@@ -88,6 +110,9 @@ export function RecordDetail({
         ) && (
           <Button onClick={() => onFiles(record._id)}>Open client files</Button>
         )}
+      {page === "assignments" && (
+        <Notice>Next: {nextStep(String(record.status))}</Notice>
+      )}
       <div className={tw("record-meta")}>
         <span>Record ID</span>
         <code>{record._id}</code>

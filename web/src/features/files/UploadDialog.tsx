@@ -1,3 +1,4 @@
+import { useUnsaved } from "../../lib/unsaved";
 import { useEffect, useRef, useState } from "react";
 import { Upload, FolderUp, FileUp } from "lucide-react";
 import {
@@ -183,6 +184,9 @@ export function UploadDialog({
   }
   return (
     <Modal
+      hasChanges={
+        busy || items.some((i) => !["complete", "skipped"].includes(i.state))
+      }
       wide
       title={source ? "Upload a new file version" : "Upload client files"}
       onClose={() => !busy && onClose()}

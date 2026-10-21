@@ -1,3 +1,5 @@
+import { nextStep } from "@lims/core";
+import { updateWork } from "../../lib/recent";
 import { ClientWorkspace } from "../clients/ClientWorkspace";
 import { tw } from "../../styles/utilities";
 import { useState, useEffect } from "react";
@@ -29,16 +31,18 @@ export function RegisterPage({
   page,
   user,
   onFiles,
+  initialRecord = null,
 }: {
   page: Page;
   user: User;
   onFiles?: (id: string) => void;
+  initialRecord?: LabRecord | null;
 }) {
   const [index, setIndex] = useState(1),
     [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [creating, setCreating] = useState(false),
-    [selected, setSelected] = useState<LabRecord | null>(null),
+    [selected, setSelected] = useState<LabRecord | null>(initialRecord),
     [message, setMessage] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -61,6 +65,22 @@ export function RegisterPage({
       );
   const total = Array.isArray(data) ? items.length : (data?.total ?? 0);
   const editable = canCreate(page, user) && !!fields[page];
+  function selectRecord(row: LabRecord) {
+    setSelected(row);
+    if (["clients", "trfs", "samples", "assignments"].includes(page))
+      updateWork(
+        user.id,
+        {
+          id: row._id,
+          kind: page as any,
+          label: String(row.number ?? row.name),
+          detail: String(
+            row.name ?? row.project ?? row.description ?? row.status ?? "",
+          ),
+        },
+        "visit",
+      );
+  }
   function exportPage() {
     const keys = columns[page];
     const escape = (value: string) =>
@@ -169,24 +189,31 @@ export function RegisterPage({
               label: pretty(k),
               render: (row) =>
                 ["status", "receiptStatus"].includes(k) ? (
-                  <Badge
-                    tone={
-                      row[k] === "accepted"
-                        ? "green"
-                        : row[k] === "rejected"
-                          ? "red"
-                          : row[k] === "quarantined" ||
-                              row[k] === "awaiting_source"
-                            ? "amber"
-                            : "blue"
-                    }
-                  >
-                    {pretty(String(row[k] ?? "—"))}
-                  </Badge>
+                  <div>
+                    <Badge
+                      tone={
+                        row[k] === "accepted"
+                          ? "green"
+                          : row[k] === "rejected"
+                            ? "red"
+                            : row[k] === "quarantined" ||
+                                row[k] === "awaiting_source"
+                              ? "amber"
+                              : "blue"
+                      }
+                    >
+                      {pretty(String(row[k] ?? "—"))}
+                    </Badge>
+                    {page === "assignments" && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {nextStep(String(row.status))}
+                      </p>
+                    )}
+                  </div>
                 ) : k === "number" ? (
                   <button
                     className={tw("record-link")}
-                    onClick={() => setSelected(row)}
+                    onClick={() => selectRecord(row)}
                   >
                     {recordLabel(row[k])}
                   </button>
@@ -199,7 +226,7 @@ export function RegisterPage({
                   recordLabel(row[k])
                 ),
             }))}
-            onSelect={setSelected}
+            onSelect={selectRecord}
           />
         )}
         <Pagination page={index} total={total} onChange={setIndex} />

@@ -342,3 +342,74 @@ it("opens a complete client dashboard, scoped records and embedded folders", asy
   await screen.findByRole("heading", { name: "Summit Buildworks" });
   expect(screen.queryByText("client1@example.com")).toBeNull();
 });
+
+it("creates a preselected client request, searches it and saves a favourite", async () => {
+  localStorage.clear();
+  const u = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("heading", { name: "Laboratory overview" });
+  await u.click(screen.getByRole("button", { name: "Clients" }));
+  await u.click(await screen.findByRole("button", { name: "View CLI-000001" }));
+  await screen.findByRole("heading", { name: "Greenfield Infrastructure" });
+  await u.click(screen.getByRole("button", { name: "New test request" }));
+  const select = await screen.findByLabelText("Client");
+  expect((select as HTMLSelectElement).disabled).toBe(true);
+  expect((select as HTMLSelectElement).value).toBe("00000000000000000000000a");
+  for (const [label, value] of [
+    ["Project name", "Usability test project"],
+    ["Project site", "Site A"],
+    ["Requested tests", "Concrete"],
+    ["Due date", "2026-12-01"],
+  ])
+    await u.type(screen.getByLabelText(label), value);
+  await u.click(screen.getByRole("button", { name: "Save record" }));
+  await screen.findByText("Usability test project");
+  await u.click(screen.getByRole("button", { name: "Search & recent work" }));
+  await u.type(
+    screen.getByLabelText("Search clients, requests, samples, tests and files"),
+    "Usability test",
+  );
+  const star = await screen.findByRole("button", { name: /Favourite TRF/ });
+  await u.click(star);
+  expect(star.getAttribute("aria-pressed")).toBe("true");
+  await u.click(
+    screen.getByRole("button", {
+      name: star.getAttribute("aria-label")!.replace("Favourite ", "Open "),
+    }),
+  );
+  await screen.findByRole("dialog");
+  expect(
+    within(screen.getByRole("dialog")).getByText("Usability test project"),
+  ).toBeTruthy();
+});
+
+it("records a payment from the client quick action and rejects overpayment", async () => {
+  const { demoRequest } = await import("../demo/adapter");
+  const charge: any = await demoRequest("/billing", "POST", {
+    clientId: "00000000000000000000000a",
+    description: "Quick action charge",
+    amountMinor: 10000,
+    dueDate: "2026-12-01",
+  });
+  const u = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("heading", { name: "Laboratory overview" });
+  await u.click(screen.getByRole("button", { name: "Clients" }));
+  await u.click(await screen.findByRole("button", { name: "View CLI-000001" }));
+  await screen.findByRole("heading", { name: "Greenfield Infrastructure" });
+  await u.click(screen.getByRole("button", { name: "Record client payment" }));
+  await u.selectOptions(
+    await screen.findByLabelText("Client charge"),
+    charge._id,
+  );
+  await u.type(screen.getByLabelText("Payment amount · INR"), "101");
+  await u.type(screen.getByLabelText("Payment reference"), "DEMO-RECEIPT");
+  await u.click(screen.getByRole("button", { name: "Save payment" }));
+  await screen.findByRole("alert");
+  await u.clear(screen.getByLabelText("Payment amount · INR"));
+  await u.type(screen.getByLabelText("Payment amount · INR"), "40");
+  await u.click(screen.getByRole("button", { name: "Save payment" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await screen.findByRole("heading", { name: "Billing & payments" });
+  expect(screen.getByText("₹40.00")).toBeTruthy();
+});

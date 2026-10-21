@@ -1,3 +1,8 @@
+import { updateWork } from "../../lib/recent";
+import { lazy, Suspense } from "react";
+const PdfViewer = lazy(() =>
+  import("../../components/PdfViewer").then((m) => ({ default: m.PdfViewer })),
+);
 import { useEffect, useState } from "react";
 import {
   fileCategories,
@@ -46,6 +51,17 @@ export function FileDetails({
     } | null>(null),
     [links, setLinks] = useState<any>({ requests: [], samples: [] });
   useEffect(() => {
+    updateWork(
+      user.id,
+      {
+        id: file._id,
+        kind: "files",
+        label: file.name,
+        detail: file.description ?? "",
+        clientId: file.clientId,
+      },
+      "visit",
+    );
     let current = true;
     request<any>("/files/assets/" + file._id)
       .then((d) => {
@@ -145,16 +161,13 @@ export function FileDetails({
               alt={preview.name}
             />
           ) : (
-            <iframe
-              title={preview.name}
-              sandbox=""
-              src={preview.url}
-              className="h-[65vh] w-full rounded-xl border border-slate-200"
-            />
+            <Suspense fallback={<Loading />}>
+              <PdfViewer url={preview.url} name={preview.name} />
+            </Suspense>
           )}
           <p className="text-xs text-slate-500">
-            If your browser cannot preview this PDF, use Download from its
-            version history.
+            Preview does not alter the original file. Download is always
+            available.
           </p>
         </div>
       ) : (

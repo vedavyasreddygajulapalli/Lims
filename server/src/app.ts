@@ -1,3 +1,4 @@
+import { productivityRouter } from "./routes/productivity.js";
 import { clientWorkspaceRouter } from "./routes/client-workspace.js";
 import { fileRouter } from "./files/router.js";
 import { SupabaseStorage, type FileStorage } from "./files/storage.js";
@@ -50,6 +51,7 @@ export function createApp(
     consolidatedRouter(storage),
     workflowRouter,
     operationsRouter,
+    productivityRouter,
     clientWorkspaceRouter,
     registersRouter,
     observationsRouter,

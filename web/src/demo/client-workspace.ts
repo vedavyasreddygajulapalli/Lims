@@ -57,6 +57,58 @@ export async function demoClientWorkspace(
         String(b.createdAt).localeCompare(String(a.createdAt)) ||
         b._id.localeCompare(a._id),
     );
+  if (u.pathname.endsWith("/activity")) {
+    const page = clientRecordsQuery.shape.page.parse(
+      u.searchParams.get("page") ?? 1,
+    );
+    const allowed = new Set<string>([id]);
+    for (const section of sections) {
+      if (section === "files") {
+        const folders = await files.request("/files/folders/" + id, "GET");
+        folders.forEach((f: any) => allowed.add(f._id));
+        for (const archived of ["false", "true"]) {
+          let p = 1;
+          while (true) {
+            const r = await files.request(
+              "/files/list?" +
+                new URLSearchParams({
+                  clientId: id,
+                  archived,
+                  page: String(p),
+                }),
+              "GET",
+            );
+            r.items.forEach((f: any) => allowed.add(f._id));
+            if (p * 50 >= r.total) break;
+            p++;
+          }
+        }
+      } else groups[section].forEach((r) => allowed.add(r._id));
+    }
+    const entries = sorted(
+      records.audit.filter(
+        (a) =>
+          allowed.has(String(a.entityId)) &&
+          (a.entity === "clients" ||
+            sections.includes(a.entity as ClientSection)),
+      ),
+    );
+    return {
+      items: entries.slice((page - 1) * 50, page * 50).map((a) => ({
+        _id: a._id,
+        action: a.action,
+        entity: a.entity,
+        createdAt: a.createdAt,
+        actorId: {
+          name:
+            records.users.find((u) => u._id === a.actorId)?.name ??
+            "Team member",
+        },
+      })),
+      total: entries.length,
+      page,
+    };
+  }
   if (u.pathname.endsWith("/records")) {
     const { section, page, q } = clientRecordsQuery.parse(
       Object.fromEntries(u.searchParams),

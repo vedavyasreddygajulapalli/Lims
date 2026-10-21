@@ -1,3 +1,7 @@
+import { confirmLeave } from "../lib/unsaved";
+import { WorkspaceSearch } from "../components/WorkspaceSearch";
+import { updateWork } from "../lib/recent";
+import type { SearchHit } from "@lims/core";
 import { FilesPage } from "../features/files/FilesPage";
 import { ConsolidatedPage } from "../features/reports/ConsolidatedPage";
 import { OperationsPage } from "../features/operations/OperationsPage";
@@ -15,6 +19,9 @@ import { canView } from "./navigation";
 import { request } from "../lib/client";
 import type { Page, User } from "../lib/types";
 export function App() {
+  const [target, setTarget] = useState<{ record: any; kind: string } | null>(
+    null,
+  );
   const [fileClient, setFileClient] = useState("");
   const [user, setUser] = useState<User | null>(null),
     [ready, setReady] = useState(false),
@@ -30,8 +37,10 @@ export function App() {
       .finally(() => setReady(true));
   }, []);
   async function logout() {
+    if (!confirmLeave()) return;
     try {
       await request("/auth/logout", "POST");
+      setTarget(null);
       setUser(null);
       setPage("overview");
     } catch (e) {
@@ -53,10 +62,29 @@ export function App() {
       user={user}
       page={page}
       navigate={(p) => {
+        if (!confirmLeave()) return;
+        setTarget(null);
         setPage(p);
         setError("");
       }}
       onLogout={logout}
+      search={
+        <WorkspaceSearch
+          user={user}
+          onOpen={async (hit) => {
+            if (!confirmLeave())
+              throw new Error("Navigation cancelled; your work is still open.");
+            const record = await request<any>(
+              hit.kind === "files"
+                ? "/files/assets/" + hit.id
+                : "/" + hit.kind + "/" + hit.id,
+            );
+            setTarget({ record, kind: hit.kind });
+            setPage(hit.kind);
+            if (hit.kind === "files") setFileClient(record.clientId);
+          }}
+        />
+      }
     >
       {isDemo && (
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm">
@@ -66,6 +94,8 @@ export function App() {
             className="rounded-lg border border-slate-300 p-2"
             value={user.id}
             onChange={async (e) => {
+              if (!confirmLeave()) return;
+              setTarget(null);
               setError("");
               try {
                 const next = await request<User>("/auth/persona", "POST", {
@@ -100,7 +130,12 @@ export function App() {
       ) : page === "overview" ? (
         <DashboardPage navigate={setPage} user={user} />
       ) : page === "files" ? (
-        <FilesPage key={user.id} user={user} initialClient={fileClient} />
+        <FilesPage
+          key={user.id + (target?.record?._id ?? "")}
+          user={user}
+          initialClient={fileClient}
+          initialAsset={target?.kind === "files" ? target.record : undefined}
+        />
       ) : page === "consolidated" ? (
         <ConsolidatedPage />
       ) : page === "settings" ? (
@@ -117,7 +152,8 @@ export function App() {
         <ReferencePage />
       ) : (
         <RegisterPage
-          key={page}
+          key={page + (target?.record?._id ?? "")}
+          initialRecord={target?.kind === page ? target.record : null}
           onFiles={(id) => {
             setFileClient(id);
             setPage("files");

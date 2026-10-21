@@ -1,3 +1,8 @@
+import { confirmLeave } from "../../lib/unsaved";
+import { nextStep } from "@lims/core";
+import { RecordForm } from "../registers/RecordForm";
+import { ClientPayment } from "./ClientPayment";
+import { ClientActivity } from "./ClientActivity";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -72,17 +77,28 @@ export function ClientWorkspace({
   user: User;
   onBack: () => void;
 }) {
+  const [quick, setQuick] = useState<"request" | "payment" | null>(null);
+  const [uploadNow, setUploadNow] = useState(false);
+  const [activity, setActivity] = useState(false);
   const [overviewRecord, setOverviewRecord] = useState<LabRecord | null>(null);
   const [tab, setTab] = useState<ClientSection | "overview">("overview");
   const summary = useQuery<Summary>("/clients/" + clientId + "/workspace");
   function choose(next: ClientSection | "overview") {
+    if (!confirmLeave()) return;
+    setActivity(false);
+    setUploadNow(false);
     setTab(next);
     if (next === "overview") summary.reload();
   }
   if (summary.loading)
     return (
       <>
-        <Button variant="ghost" onClick={onBack}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (confirmLeave()) onBack();
+          }}
+        >
           <ArrowLeft size={16} />
           Back to clients
         </Button>
@@ -92,7 +108,12 @@ export function ClientWorkspace({
   if (summary.error || !summary.data)
     return (
       <>
-        <Button variant="ghost" onClick={onBack}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (confirmLeave()) onBack();
+          }}
+        >
           Back to clients
         </Button>
         <Notice tone="red">
@@ -106,7 +127,12 @@ export function ClientWorkspace({
   return (
     <>
       <div className="mb-5 flex items-center justify-between gap-3">
-        <Button variant="ghost" onClick={onBack}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (confirmLeave()) onBack();
+          }}
+        >
           <ArrowLeft size={16} />
           Back to clients
         </Button>
@@ -160,6 +186,41 @@ export function ClientWorkspace({
           ))}
         </dl>
       </section>
+      <div className="mb-5 flex flex-wrap gap-3">
+        {user.roles.some((r) =>
+          ["admin", "manager", "reception"].includes(r),
+        ) && (
+          <Button onClick={() => setQuick("request")}>New test request</Button>
+        )}
+        {user.roles.some((r) =>
+          ["admin", "manager", "reception", "accounts"].includes(r),
+        ) && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (!confirmLeave()) return;
+              setActivity(false);
+              setTab("files");
+              setUploadNow(true);
+            }}
+          >
+            Upload client files
+          </Button>
+        )}
+        {sections.includes("billing") && (
+          <Button variant="secondary" onClick={() => setQuick("payment")}>
+            Record client payment
+          </Button>
+        )}
+        <Button
+          variant="secondary"
+          onClick={() => {
+            if (confirmLeave()) setActivity(true);
+          }}
+        >
+          Client activity
+        </Button>
+      </div>
       <nav
         aria-label="Client sections"
         className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 pb-2"
@@ -167,11 +228,11 @@ export function ClientWorkspace({
         {(["overview", ...sections] as const).map((k) => (
           <button
             key={k}
-            aria-current={tab === k ? "page" : undefined}
+            aria-current={!activity && tab === k ? "page" : undefined}
             onClick={() => choose(k)}
             className={
               "shrink-0 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors " +
-              (tab === k
+              (!activity && tab === k
                 ? "bg-teal-800 text-white"
                 : "text-slate-600 hover:bg-slate-100")
             }
@@ -181,7 +242,7 @@ export function ClientWorkspace({
               <span
                 className={
                   "ml-2 rounded-md px-1.5 py-0.5 text-xs " +
-                  (tab === k ? "bg-white/15" : "bg-slate-100")
+                  (!activity && tab === k ? "bg-white/15" : "bg-slate-100")
                 }
               >
                 {counts[k] ?? 0}
@@ -190,7 +251,9 @@ export function ClientWorkspace({
           </button>
         ))}
       </nav>
-      {tab === "overview" ? (
+      {activity ? (
+        <ClientActivity clientId={clientId} />
+      ) : tab === "overview" ? (
         <>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {(
@@ -325,9 +388,10 @@ export function ClientWorkspace({
         </>
       ) : tab === "files" ? (
         <FilesPage
-          key={clientId}
+          key={clientId + String(uploadNow)}
           initialClient={clientId}
           user={user}
+          startUpload={uploadNow}
           lockedClient
         />
       ) : (
@@ -337,6 +401,31 @@ export function ClientWorkspace({
           section={tab}
           user={user}
           onChanged={summary.reload}
+        />
+      )}
+      {quick === "request" && (
+        <RecordForm
+          page="trfs"
+          initialValues={{ clientId }}
+          onClose={() => setQuick(null)}
+          onSaved={() => {
+            setQuick(null);
+            summary.reload();
+            setTab("trfs");
+            setActivity(false);
+          }}
+        />
+      )}
+      {quick === "payment" && (
+        <ClientPayment
+          clientId={clientId}
+          onClose={() => setQuick(null)}
+          onSaved={() => {
+            setQuick(null);
+            summary.reload();
+            setTab("billing");
+            setActivity(false);
+          }}
         />
       )}
       {overviewRecord && (
@@ -452,7 +541,14 @@ function ClientRecords({
                       : pretty(k),
                 render: (r) =>
                   k === "status" || k === "receiptStatus" ? (
-                    <Badge>{pretty(String(r[k]))}</Badge>
+                    <div>
+                      <Badge>{pretty(String(r[k]))}</Badge>
+                      {section === "assignments" && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          {nextStep(String(r.status))}
+                        </p>
+                      )}
+                    </div>
                   ) : k.endsWith("Minor") ? (
                     money(r[k])
                   ) : k === "createdAt" || k === "dueDate" ? (

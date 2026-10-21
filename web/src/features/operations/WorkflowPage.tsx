@@ -1,3 +1,4 @@
+import { nextStep } from "@lims/core";
 import { useState } from "react";
 import {
   Button,
@@ -129,6 +130,11 @@ export function WorkflowPage({
                   <Badge tone={row.status === "authorized" ? "green" : "amber"}>
                     {pretty(String(row.status))}
                   </Badge>
+                  {page === "review" && (
+                    <p className="text-sm font-medium text-teal-800">
+                      Next: {nextStep(String(row.status))}
+                    </p>
+                  )}
                 </div>
                 <details className="rounded-lg bg-slate-50 p-3 text-sm">
                   <summary className="cursor-pointer font-medium">

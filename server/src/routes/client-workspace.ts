@@ -7,6 +7,7 @@ import {
   type ClientSection,
 } from "@lims/core";
 import {
+  Audit,
   Client,
   Trf,
   Sample,
@@ -16,7 +17,7 @@ import {
   Billing,
   Quality,
 } from "../models.js";
-import { FileAsset } from "../files/models.js";
+import { FileAsset, FileFolder } from "../files/models.js";
 import { allow, DomainError } from "../domain.js";
 import { escapeRegex } from "../services/search.js";
 export const clientWorkspaceRouter = Router();
@@ -171,6 +172,47 @@ clientWorkspaceRouter.get(
         .limit(50)
         .lean(),
       total: await Model.countDocuments(filter),
+      page,
+    });
+  },
+);
+
+clientWorkspaceRouter.get(
+  "/clients/:id/workspace/activity",
+  async (req, res) => {
+    const page = clientRecordsQuery.shape.page.parse(req.query.page ?? 1);
+    const { client, filters, sections } = await context(
+      String(req.params.id),
+      res.locals.user.roles,
+    );
+    const scopes: any[] = [{ entity: "clients", entityId: client._id }];
+    for (const section of sections) {
+      const Model: any = section === "files" ? FileAsset : models[section];
+      const ids = await Model.find(
+        section === "files"
+          ? { ...filters.files, archived: { $in: [true, false] } }
+          : filters[section],
+      ).distinct("_id");
+      scopes.push({ entity: section, entityId: { $in: ids } });
+    }
+    if (sections.includes("files"))
+      scopes.push({
+        entity: "files",
+        entityId: {
+          $in: await FileFolder.find({ clientId: client._id }).distinct("_id"),
+        },
+      });
+    const filter = { $or: scopes };
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      items: await Audit.find(filter)
+        .select("action entity createdAt actorId")
+        .populate("actorId", "name")
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * 50)
+        .limit(50)
+        .lean(),
+      total: await Audit.countDocuments(filter),
       page,
     });
   },

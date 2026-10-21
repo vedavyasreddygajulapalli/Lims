@@ -49,3 +49,37 @@ describe("client workspace scope and permissions", () => {
     ).rejects.toThrow(/role/);
   });
 });
+
+it("global search and activity respect client links and hide commercial work from reviewers", async () => {
+  resetDemo();
+  const a = "00000000000000000000000a",
+    b = "00000000000000000000000b";
+  await demoRequest("/billing", "POST", {
+    clientId: a,
+    description: "Private charge",
+    amountMinor: 10000,
+    dueDate: "2026-12-01",
+  });
+  const one: any = await demoRequest(
+    "/clients/" + a + "/workspace/activity",
+    "GET",
+  );
+  expect(one.items.some((r: any) => r.entity === "billing")).toBe(true);
+  const two: any = await demoRequest(
+    "/clients/" + b + "/workspace/activity",
+    "GET",
+  );
+  expect(two.items.some((r: any) => r.entity === "billing")).toBe(false);
+  const hits: any = await demoRequest("/search?q=Greenfield", "GET");
+  expect(hits.items.some((r: any) => r.kind === "clients" && r.id === a)).toBe(
+    true,
+  );
+  await demoRequest("/auth/persona", "POST", {
+    id: "000000000000000000000003",
+  });
+  const restricted: any = await demoRequest(
+    "/clients/" + a + "/workspace/activity",
+    "GET",
+  );
+  expect(restricted.items.some((r: any) => r.entity === "billing")).toBe(false);
+});

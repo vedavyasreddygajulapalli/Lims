@@ -1,5 +1,7 @@
+import { useUnsaved } from "../lib/unsaved";
 import { tw } from "../styles/utilities";
 import {
+  useState,
   useEffect,
   useRef,
   type ReactNode,
@@ -191,26 +193,49 @@ export function Pagination({
     </div>
   );
 }
+let modalCount = 0;
+let modalOverflow = "";
+const modalStack: HTMLElement[] = [];
 export function Modal({
   title,
   children,
   onClose,
   wide = false,
+  protectChanges = true,
+  hasChanges,
+  cleanToken,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  protectChanges?: boolean;
+  hasChanges?: boolean;
+  cleanToken?: unknown;
 }) {
+  const [dirty, setDirty] = useState(false);
+  const effectiveDirty = hasChanges ?? (protectChanges && dirty);
+  useUnsaved(effectiveDirty);
+  useEffect(() => setDirty(false), [cleanToken]);
+  const guardedClose = () => {
+    if (!effectiveDirty || window.confirm("Discard unsaved changes?")) {
+      setDirty(false);
+      onClose();
+    }
+  };
   const ref = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  close.current = onClose;
+  close.current = guardedClose;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    const oldOverflow = document.body.style.overflow;
+    if (modalCount === 0) modalOverflow = document.body.style.overflow;
+    modalCount++;
+    if (ref.current) modalStack.push(ref.current);
+    const element = ref.current;
     document.body.style.overflow = "hidden";
     ref.current?.focus();
     const key = (e: KeyboardEvent) => {
+      if (modalStack.at(-1) !== ref.current) return;
       if (e.key === "Escape") close.current();
       if (e.key === "Tab") {
         const elements = Array.from(
@@ -244,19 +269,43 @@ export function Modal({
     document.addEventListener("keydown", key);
     return () => {
       document.removeEventListener("keydown", key);
-      document.body.style.overflow = oldOverflow;
-      previous?.focus();
+      modalCount--;
+      if (element) {
+        const index = modalStack.indexOf(element);
+        if (index >= 0) modalStack.splice(index, 1);
+      }
+      if (modalCount === 0) document.body.style.overflow = modalOverflow;
+      if (previous?.isConnected) previous.focus();
     };
   }, []);
   return (
     <div
       className={tw("overlay")}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) guardedClose();
       }}
     >
       <div
         ref={ref}
+        onChangeCapture={(e) => {
+          if (!(e.target as HTMLElement).closest("[data-no-dirty]"))
+            setDirty(true);
+        }}
+        onClickCapture={(e) => {
+          const b = (e.target as HTMLElement).closest("button");
+          if (
+            b &&
+            /^(Cancel|Close|Back to clients)$/.test(
+              b.textContent?.trim() ?? "",
+            ) &&
+            effectiveDirty
+          ) {
+            if (!window.confirm("Discard unsaved changes?")) {
+              e.preventDefault();
+              e.stopPropagation();
+            } else setDirty(false);
+          }
+        }}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -268,7 +317,11 @@ export function Modal({
             <p className={tw("eyebrow")}>LABORATORY RECORD</p>
             <h2>{title}</h2>
           </div>
-          <Button variant="ghost" aria-label="Close dialog" onClick={onClose}>
+          <Button
+            variant="ghost"
+            aria-label="Close dialog"
+            onClick={guardedClose}
+          >
             <X size={20} />
           </Button>
         </div>

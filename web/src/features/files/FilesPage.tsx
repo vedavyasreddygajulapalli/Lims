@@ -1,3 +1,4 @@
+import { useUnsaved } from "../../lib/unsaved";
 import { useEffect, useState } from "react";
 import {
   Folder,
@@ -41,10 +42,14 @@ export function FilesPage({
   user,
   initialClient = "",
   lockedClient = false,
+  initialAsset,
+  startUpload = false,
 }: {
   user: User;
   initialClient?: string;
   lockedClient?: boolean;
+  initialAsset?: ClientFile;
+  startUpload?: boolean;
 }) {
   const [clientId, setClient] = useState(initialClient),
     [clientSearch, setClientSearch] = useState(""),
@@ -62,7 +67,7 @@ export function FilesPage({
     [busy, setBusy] = useState(false),
     [upload, setUpload] = useState(false),
     [replacement, setReplacement] = useState<ClientFile | undefined>(),
-    [detail, setDetail] = useState<ClientFile | null>(null),
+    [detail, setDetail] = useState<ClientFile | null>(initialAsset ?? null),
     [selection, setSelection] = useState<Record<string, ClientFile>>({}),
     [folderDialog, setFolderDialog] = useState<"new" | "edit" | null>(null),
     [folderName, setFolderName] = useState(""),
@@ -93,6 +98,9 @@ export function FilesPage({
   const list = useQuery<{ items: ClientFile[]; total: number; page: number }>(
     "/files/list?" + query,
   );
+  useEffect(() => {
+    if (startUpload && status.data?.ready) setUpload(true);
+  }, [startUpload, status.data?.ready]);
   const selected = Object.values(selection);
   const currentFolder = folders.data?.find((f) => f._id === folderId);
   const write = canManageFiles(user.roles),
